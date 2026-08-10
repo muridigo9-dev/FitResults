@@ -1,0 +1,137 @@
+name: 🔄 Reset & Setup Database (Supabase)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Type 'RESET' to confirm database deletion and fresh setup"
+        required: true
+        default: "NO"
+
+jobs:
+  reset-and-setup:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+    steps:
+      - name: 📦 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🛑 Safety check
+        run: |
+          if [ "${{ github.event.inputs.confirm }}" != "RESET" ]; then
+            echo "❌ You must type RESET to proceed"
+            exit 1
+          fi
+
+      - name: 🔧 Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: 🔐 Login Supabase
+        run: supabase login --token "$SUPABASE_ACCESS_TOKEN"
+
+      - name: 🔗 Link project
+        run: |
+          export PGPASSWORD="$SUPABASE_DB_PASSWORD"
+          supabase link \
+            --project-ref "$SUPABASE_PROJECT_ID" \
+            --password "$SUPABASE_DB_PASSWORD"
+
+      - name: ⚠️ RESET DATABASE (Wipe & Apply Migrations)
+        run: |
+          echo "🔥 Resetting database to a clean state..."
+          export PGPASSWORD="$SUPABASE_DB_PASSWORD"
+          supabase db reset --linked --yes
+
+      - name: 👥 Re-create test users (Auth API)
+        run: |
+          echo "Creating test users via Auth API..."
+          
+          create_user() {
+            local email="$1"
+            local password="$2"
+            local full_name="$3"
+            
+            echo "Creating user: $email..."
+            curl -s -X POST \
+              "https://${SUPABASE_PROJECT_ID}.supabase.co/auth/v1/admin/users" \
+              -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+              -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+              -H "Content-Type: application/json" \
+              -d "{
+                \"email\": \"$email\",
+                \"password\": \"$password\",
+                \"email_confirm\": true,
+                \"user_metadata\": {
+                  \"full_name\": \"$full_name\",
+                  \"must_change_password\": true
+                }
+              }"
+          }
+          
+          TEST_PASSWORD="Temp@123"
+          
+          # =====================================================
+          # TEST USERS - Plans are assigned via DB trigger
+          # pro@test.com -> Pro Plan (via auto_provision_test_user)
+          # All others  -> Free Plan (via auto_provision_test_user)
+          # =====================================================
+          
+          # Admin
+          create_user "admin@admin.com" "$TEST_PASSWORD" "Administrador"
+          
+          # Pro User (will get Pro plan via trigger)
+          create_user "pro@test.com" "$TEST_PASSWORD" "Usuário Pro Teste"
+          
+          # Free Users (will get Free plan via trigger)
+          create_user "user@test.com" "$TEST_PASSWORD" "Usuário Free Teste"
+          create_user "aluno@test.com" "$TEST_PASSWORD" "Aluno Teste"
+          
+          # Role-based test users
+          create_user "gym@test.com" "$TEST_PASSWORD" "Academia Teste"
+          create_user "pt@test.com" "$TEST_PASSWORD" "Personal Trainer Teste"
+          create_user "content@test.com" "$TEST_PASSWORD" "Criador de Conteúdo Teste"
+          
+          # Additional students for testing
+          create_user "student1@test.com" "$TEST_PASSWORD" "Aluno 1"
+          create_user "student2@test.com" "$TEST_PASSWORD" "Aluno 2"
+          create_user "student3@test.com" "$TEST_PASSWORD" "Aluno 3"
+          
+          echo "✅ Test users setup complete"
+          echo ""
+          echo "📋 Users created:"
+          echo "  - admin@admin.com (Admin - no plan needed)"
+          echo "  - pro@test.com (Pro Plan)"
+          echo "  - user@test.com (Free Plan)"
+          echo "  - aluno@test.com (Free Plan)"
+          echo "  - gym@test.com (Academy Admin)"
+          echo "  - pt@test.com (Personal Trainer)"
+          echo "  - content@test.com (Content Creator)"
+          echo "  - student1/2/3@test.com (Students)"
+
+
+      - name: ⚡ Deploy Edge Functions
+        run: |
+          echo "Deploying edge functions..."
+          supabase functions deploy provision-admin --no-verify-jwt
+          supabase functions deploy provision-test-users --no-verify-jwt
+          supabase functions deploy get-manifest --no-verify-jwt
+          supabase functions deploy send-push-notification --no-verify-jwt
+          supabase functions deploy process-cancellation --no-verify-jwt
+          supabase functions deploy send-email --no-verify-jwt
+          supabase functions deploy stripe-webhook --no-verify-jwt
+          supabase functions deploy create-checkout-session --no-verify-jwt
+          supabase functions deploy create-billing-portal-session --no-verify-jwt
+          supabase functions deploy create-test-user --no-verify-jwt
+          supabase functions deploy send-password-reset --no-verify-jwt
+          echo "✅ Edge functions deployed"
+
+      - name: 🎉 Done
+        run: |
+          echo "✅ Database reset and setup completed successfully!"

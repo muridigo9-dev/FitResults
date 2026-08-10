@@ -1,0 +1,181 @@
+name: Deploy Database (Supabase) + Bootstrap Test Users
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+    steps:
+      - name: 📦 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: 🔐 Login Supabase
+        run: supabase login --token "$SUPABASE_ACCESS_TOKEN"
+
+      - name: 🔗 Link project
+        run: |
+          export PGPASSWORD="$SUPABASE_DB_PASSWORD"
+          supabase link \
+            --project-ref "$SUPABASE_PROJECT_ID" \
+            --password "$SUPABASE_DB_PASSWORD"
+
+      # -------------------------
+      # Create Test Users (Auth API)
+      # Uses autoconfirm to skip email verification
+      # No emails are sent during this process
+      # -------------------------
+      - name: 👥 Create test users (Auth API - No Emails)
+        run: |
+          echo "Creating test users via Auth API (no emails sent)..."
+          
+          # Function to create user if not exists
+          create_user() {
+            local email="$1"
+            local password="$2"
+            local full_name="$3"
+            
+            echo "Creating user: $email..."
+            
+            # Try to create user - will fail silently if exists
+            response=$(curl -s -w "\n%{http_code}" -X POST \
+              "https://${SUPABASE_PROJECT_ID}.supabase.co/auth/v1/admin/users" \
+              -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+              -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+              -H "Content-Type: application/json" \
+              -d "{
+                \"email\": \"$email\",
+                \"password\": \"$password\",
+                \"email_confirm\": true,
+                \"user_metadata\": {
+                  \"full_name\": \"$full_name\",
+                  \"must_change_password\": true
+                }
+              }")
+            
+            http_code=$(echo "$response" | tail -n1)
+            body=$(echo "$response" | sed '$d')
+            
+            if [ "$http_code" = "200" ] || [ "$http_code" = "201" ]; then
+              echo "  ✅ Created: $email"
+            elif echo "$body" | grep -q "already been registered"; then
+              echo "  ⏭️  Already exists: $email"
+            else
+              echo "  ⚠️  Response for $email: $body"
+            fi
+          }
+          
+          # Default password for all test users (must be changed on first login)
+          TEST_PASSWORD="Temp@123"
+          
+          # Create all test users (9 users total)
+          echo "Creating 9 test users with different roles..."
+          echo ""
+          
+          # Admin
+          create_user "admin@test.com" "$TEST_PASSWORD" "Admin Teste"
+          
+          # Standard User
+          create_user "user@test.com" "$TEST_PASSWORD" "Usuário Comum"
+          
+          # Academy Admin
+          create_user "gym@test.com" "$TEST_PASSWORD" "Academia Teste"
+          
+          # Personal Trainer
+          create_user "pt@test.com" "$TEST_PASSWORD" "Personal Trainer"
+          
+          # Nutritionist
+          create_user "nutritionist@test.com" "$TEST_PASSWORD" "Nutricionista Teste"
+          
+          # Students (3 students for testing academy features)
+          create_user "student1@test.com" "$TEST_PASSWORD" "Aluno 1"
+          create_user "student2@test.com" "$TEST_PASSWORD" "Aluno 2"
+          create_user "student3@test.com" "$TEST_PASSWORD" "Aluno 3"
+          
+          echo ""
+          echo "✅ Test users creation completed"
+          echo ""
+          echo "📋 Test Users Summary (9 users):"
+          echo "   🔴 admin@test.com          (role: admin)"
+          echo "   🔵 user@test.com           (role: user)"
+          echo "   🟢 gym@test.com            (role: academy_admin, owns Test Academy)"
+          echo "   🟡 pt@test.com             (role: personal_trainer, linked to academy)"
+          echo "   🟠 nutritionist@test.com   (role: nutritionist, linked to academy)"
+          echo "   🟣 student1@test.com       (role: aluno, linked to academy)"
+          echo "   🟣 student2@test.com       (role: aluno, linked to academy)"
+          echo "   🟣 student3@test.com       (role: aluno, linked to academy)"
+          echo ""
+          echo "🔐 Default password for all: $TEST_PASSWORD"
+          echo "⚠️  All users must change password on first login"
+          echo ""
+          echo "🏋️ Test Academy will be created by migration with:"
+          echo "   - Owner: gym@test.com"
+          echo "   - Trainer: pt@test.com"
+          echo "   - Nutritionist: nutritionist@test.com"
+          echo "   - Students: student1, student2, student3"
+
+      # -------------------------
+      # Run migrations
+      # This will provision profiles and roles for created users
+      # -------------------------
+      - name: 🚀 Apply migrations
+        run: |
+          export PGPASSWORD="$SUPABASE_DB_PASSWORD"
+          supabase db push --linked
+
+      # -------------------------
+      # Deploy Edge Functions
+      # -------------------------
+      - name: ⚡ Deploy Edge Functions
+        run: |
+          echo "Deploying all edge functions..."
+          supabase functions deploy provision-admin --no-verify-jwt
+          supabase functions deploy provision-test-users --no-verify-jwt
+          supabase functions deploy get-manifest --no-verify-jwt
+          supabase functions deploy send-push-notification --no-verify-jwt
+          supabase functions deploy process-cancellation --no-verify-jwt
+          supabase functions deploy send-email --no-verify-jwt
+          supabase functions deploy stripe-webhook --no-verify-jwt
+          supabase functions deploy create-checkout-session --no-verify-jwt
+          supabase functions deploy create-billing-portal-session --no-verify-jwt
+          supabase functions deploy create-test-user --no-verify-jwt
+          supabase functions deploy send-password-reset --no-verify-jwt
+          echo "✅ All edge functions deployed"
+
+      - name: 🎉 Done
+        run: |
+          echo "============================================"
+          echo "✅ Deployment completed successfully!"
+          echo "============================================"
+          echo ""
+          echo "📦 Database: Deployed"
+          echo "👥 Test Users: Created"
+          echo "⚡ Edge Functions: Deployed"
+          echo ""
+          echo "🔑 Test Credentials:"
+          echo "   All users: Temp@123 (must change on first login)"
+          echo ""
+          echo "📋 Available Users (9 total):"
+          echo "   🔴 admin@test.com - SUPER ADMIN"
+          echo "   🔵 user@test.com - Standard User"
+          echo "   🟢 gym@test.com - Academy Owner"
+          echo "   🟡 pt@test.com - Personal Trainer"
+          echo "   🟠 nutritionist@test.com - Nutritionist"
+          echo "   🟣 student1@test.com - Student"
+          echo "   🟣 student2@test.com - Student"
+          echo "   🟣 student3@test.com - Student"
+          echo ""
+          echo "🏋️ Test Academy: 'Test Academy'"
+          echo "   - Linked to gym@test.com (owner)"
+          echo "   - Has PT, Nutritionist, and 3 Students"
+          echo "============================================"

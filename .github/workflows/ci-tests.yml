@@ -1,0 +1,80 @@
+name: CI Tests (Manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_lint:
+        description: "Run Lint?"
+        required: true
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
+
+      run_unit_tests:
+        description: "Run Unit Tests?"
+        required: true
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
+
+      run_e2e_tests:
+        description: "Run E2E Tests?"
+        required: true
+        default: "false"
+        type: choice
+        options:
+          - "true"
+          - "false"
+
+jobs:
+  lint:
+    if: ${{ github.event.inputs.run_lint == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v1
+      - run: bun install
+      - run: bun run lint
+
+  unit-tests:
+    if: ${{ github.event.inputs.run_unit_tests == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v1
+      - run: bun install
+      - run: bun run test
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: coverage/
+
+  e2e-tests:
+    if: ${{ github.event.inputs.run_e2e_tests == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v1
+      - run: bun install
+      - run: bunx playwright install --with-deps
+      - run: bun run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
+
+  deploy-gate:
+    runs-on: ubuntu-latest
+    needs: [lint, unit-tests, e2e-tests]
+    if: always()
+    steps:
+      - name: Deploy gate status
+        run: |
+          echo "✅ Workflow finalizado"
+          echo "➡️ Deploy liberado apenas quando você rodar este workflow manualmente"

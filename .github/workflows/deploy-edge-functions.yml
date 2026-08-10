@@ -1,0 +1,59 @@
+name: ⚡ Deploy Edge Functions Only
+
+on:
+  workflow_dispatch:
+    inputs:
+      function_name:
+        description: "Name of the function to deploy (leave empty for all)"
+        required: false
+        default: ""
+      confirm:
+        description: "Type 'DEPLOY' to confirm deploying functions"
+        required: true
+        default: "NO"
+
+jobs:
+  deploy-functions:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+    steps:
+      - name: 📦 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🛑 Safety check
+        run: |
+          if [ "${{ github.event.inputs.confirm }}" != "DEPLOY" ]; then
+            echo "❌ You must type DEPLOY to proceed"
+            exit 1
+          fi
+
+      - name: 🔧 Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: 🔐 Login Supabase
+        run: supabase login --token "$SUPABASE_ACCESS_TOKEN"
+
+      - name: 🚀 Deploy Edge Functions
+        run: |
+          if [ -z "${{ github.event.inputs.function_name }}" ]; then
+            echo "⏳ Deploying all edge functions..."
+            supabase functions deploy --project-ref "$SUPABASE_PROJECT_ID"
+          else
+            echo "⏳ Deploying function: ${{ github.event.inputs.function_name }}..."
+            supabase functions deploy "${{ github.event.inputs.function_name }}" --project-ref "$SUPABASE_PROJECT_ID"
+          fi
+          echo "✅ Deployment completed successfully!"
+
+      - name: 🎉 Done
+        run: |
+          echo "🚀 Edge Functions deployment finished!"
+          if [ -z "${{ github.event.inputs.function_name }}" ]; then
+            echo "📝 All functions were updated."
+          else
+            echo "📝 Only '${{ github.event.inputs.function_name }}' was updated."
+          fi

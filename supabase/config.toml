@@ -1,0 +1,39 @@
+# Configure this with your own Supabase project ID
+# Or use GitHub Secrets for CI/CD workflows
+project_id = "your-project-id"
+
+[functions.provision-admin]
+verify_jwt = false
+
+[functions.get-manifest]
+verify_jwt = false
+
+[functions.send-push-notification]
+verify_jwt = false
+
+[functions.process-cancellation]
+verify_jwt = false
+
+[functions.send-email]
+verify_jwt = false
+
+[functions.stripe-webhook]
+verify_jwt = false
+
+[functions.create-checkout-session]
+verify_jwt = false
+
+[functions.create-billing-portal-session]
+verify_jwt = false
+
+[functions.create-test-user]
+verify_jwt = false
+
+[functions.send-password-reset]
+verify_jwt = false
+
+[functions.admin-force-password-change]
+verify_jwt = false
+
+[functions.provision-test-users]
+verify_jwt = false

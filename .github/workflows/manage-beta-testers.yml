@@ -1,0 +1,129 @@
+name: 👥 Manage Beta Testers
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Action to perform"
+        required: true
+        default: "recreate"
+        type: choice
+        options:
+          - create
+          - delete
+          - recreate
+
+jobs:
+  manage-beta-testers:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+    steps:
+      - name: "🚀 Executing Action: ${{ github.event.inputs.action }}"
+        run: |
+          echo "Starting operation..."
+          
+          # List of Beta Testers
+          USERS=(
+            "jailtonssam@gmail.com"
+            "robertocmoreno@hotmail.com"
+            "ronycamargo38@gmail.com"
+            "maodeobrarural@hotmail.com"
+            "rcolnago@gmail.com"
+            "lianydelrosario@gmail.com"
+            "rodriguesdacostadouglas1@gmail.com"
+            "izildo@gmail.com"
+            "ptripode@gmail.com"
+            "dfaria.ti@gmail.com"
+          )
+          
+          DEFAULT_PASSWORD="123@Temp"
+          ACTION="${{ github.event.inputs.action }}"
+          
+          # Function to create user
+          create_user() {
+            local email="$1"
+            
+            # Check existing (double check to avoid error logs)
+            user_id=$(curl -s -X GET \
+              "https://${SUPABASE_PROJECT_ID}.supabase.co/auth/v1/admin/users" \
+              -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+              -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+              | jq -r ".users[] | select(.email==\"$email\") | .id" 2>/dev/null || echo "")
+              
+            if [ -n "$user_id" ]; then
+               echo "⚠️ User $email already exists. Skipping creation."
+               return
+            fi
+            
+            echo "Creating $email..."
+            response=$(curl -s -X POST \
+              "https://${SUPABASE_PROJECT_ID}.supabase.co/auth/v1/admin/users" \
+              -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+              -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+              -H "Content-Type: application/json" \
+              -d "{
+                \"email\": \"$email\",
+                \"password\": \"$DEFAULT_PASSWORD\",
+                \"email_confirm\": true,
+                \"user_metadata\": {
+                  \"full_name\": \"Beta Tester\",
+                  \"must_change_password\": true,
+                  \"is_beta_tester\": true
+                }
+              }")
+              
+             if echo "$response" | jq -e '.id' > /dev/null 2>&1; then
+               echo "✅ Created: $email"
+             else
+               echo "❌ Failed to create $email: $response"
+             fi
+          }
+          
+          # Function to delete user
+          delete_user() {
+            local email="$1"
+            
+             # Find ID
+            user_id=$(curl -s -X GET \
+              "https://${SUPABASE_PROJECT_ID}.supabase.co/auth/v1/admin/users" \
+              -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+              -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+              | jq -r ".users[] | select(.email==\"$email\") | .id" 2>/dev/null || echo "")
+              
+            if [ -z "$user_id" ]; then
+               echo "⚠️ User $email not found (already deleted?)."
+               return
+            fi
+            
+            # Delete
+            curl -s -X DELETE \
+              "https://${SUPABASE_PROJECT_ID}.supabase.co/auth/v1/admin/users/$user_id" \
+              -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+              -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY"
+              
+            echo "🗑️ Deleted: $email"
+          }
+          
+          # Main Loop
+          for email in "${USERS[@]}"; do
+            echo "----------------------------------------"
+            echo "Processing: $email"
+            
+            # 1. DELETE logic
+            if [[ "$ACTION" == "delete" || "$ACTION" == "recreate" ]]; then
+              delete_user "$email"
+              # Small delay to ensure consistency if recreating immediately
+              sleep 1
+            fi
+            
+            # 2. CREATE logic
+            if [[ "$ACTION" == "create" || "$ACTION" == "recreate" ]]; then
+              create_user "$email"
+            fi
+          done
+          
+          echo "----------------------------------------"
+          echo "🎉 Operation Complete!"

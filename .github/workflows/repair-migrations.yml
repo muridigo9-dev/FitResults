@@ -1,0 +1,52 @@
+name: Repair Supabase Migrations
+
+on:
+  workflow_dispatch:
+    inputs:
+      migration_version:
+        description: "Migration version to mark as reverted (ex: 20260106000000)"
+        required: true
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+
+    env:
+      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+
+    steps:
+      - name: 📦 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: 🔐 Login Supabase
+        run: |
+          supabase login --token "$SUPABASE_ACCESS_TOKEN"
+
+      - name: 🔗 Link Supabase project
+        run: |
+          export PGPASSWORD="$SUPABASE_DB_PASSWORD"
+          supabase link \
+            --project-ref "$SUPABASE_PROJECT_ID" \
+            --password "$SUPABASE_DB_PASSWORD"
+
+      - name: 🛠️ Repair migration history
+        run: |
+          echo "🧹 Repairing migration ${{ github.event.inputs.migration_version }}"
+          supabase migration repair \
+            --status reverted \
+            ${{ github.event.inputs.migration_version }}
+
+      - name: 📋 Verify migration state
+        run: |
+          supabase migration list --linked
+
+      - name: ✅ Done
+        run: |
+          echo "Migration repaired successfully"

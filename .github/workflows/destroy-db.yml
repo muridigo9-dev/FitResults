@@ -1,0 +1,59 @@
+name: ⚠️ Reset Database (Supabase)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Type RESET to confirm database deletion"
+        required: true
+        default: "NO"
+
+jobs:
+  reset-db:
+    runs-on: ubuntu-latest
+
+    env:
+      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+
+    steps:
+      - name: 📦 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🛑 Safety check
+        run: |
+          if [ "${{ github.event.inputs.confirm }}" != "RESET" ]; then
+            echo "❌ You must type RESET to proceed"
+            exit 1
+          fi
+
+      - name: 🔧 Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: 🔐 Login Supabase (CI mode)
+        run: |
+          supabase login --token "$SUPABASE_ACCESS_TOKEN"
+
+      - name: 🔗 Link project
+        run: |
+          export PGPASSWORD="$SUPABASE_DB_PASSWORD"
+          supabase link \
+            --project-ref "$SUPABASE_PROJECT_ID" \
+            --password "$SUPABASE_DB_PASSWORD"
+
+      - name: ⚠️ RESET DATABASE (DROP ALL TABLES)
+        run: |
+          echo "🔥 Resetting database..."
+          export PGPASSWORD="$SUPABASE_DB_PASSWORD"
+          supabase db reset --linked --yes
+
+      - name: ✅ Verify database state
+        run: |
+          supabase migration list --linked || true
+
+      - name: 🎉 Done
+        run: |
+          echo "✅ Database reset completed successfully"

@@ -1,0 +1,131 @@
+name: 🚀 Apply Migrations Only (No Reset)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Type 'APPLY' to confirm applying pending migrations"
+        required: true
+        default: "NO"
+      create_test_users:
+        description: "Create test users if they don't exist"
+        required: false
+        type: boolean
+        default: true
+
+jobs:
+  apply-migrations:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+    steps:
+      - name: 📦 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🛑 Safety check
+        run: |
+          if [ "${{ github.event.inputs.confirm }}" != "APPLY" ]; then
+            echo "❌ You must type APPLY to proceed"
+            exit 1
+          fi
+
+      - name: 🔧 Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: 🔐 Login Supabase
+        run: supabase login --token "$SUPABASE_ACCESS_TOKEN"
+
+      - name: 🔗 Link project
+        run: |
+          export PGPASSWORD="$SUPABASE_DB_PASSWORD"
+          supabase link \
+            --project-ref "$SUPABASE_PROJECT_ID" \
+            --password "$SUPABASE_DB_PASSWORD"
+
+      - name: 📋 Check pending migrations
+        run: |
+          echo "🔍 Checking for pending migrations..."
+          supabase db remote commit --linked 2>/dev/null || true
+          echo "📦 Current migration status:"
+          ls -la supabase/migrations/ | tail -10 || echo "No migrations folder found"
+
+      - name: 🚀 Apply Pending Migrations (db push)
+        run: |
+          echo "⏳ Applying pending migrations..."
+          export PGPASSWORD="$SUPABASE_DB_PASSWORD"
+          supabase db push --linked --include-all
+          echo "✅ Migrations applied successfully!"
+
+      - name: 👥 Create test users (only if they don't exist)
+        if: ${{ github.event.inputs.create_test_users == 'true' }}
+        run: |
+          echo "Creating test users if they don't exist..."
+          
+          # Function to create user only if not exists
+          create_user_if_not_exists() {
+            local email="$1"
+            local password="$2"
+            local full_name="$3"
+            
+            # Check if user exists first
+            echo "Checking if $email exists..."
+            existing=$(curl -s -X GET \
+              "https://${SUPABASE_PROJECT_ID}.supabase.co/auth/v1/admin/users" \
+              -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+              -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+              | jq -r ".users[] | select(.email==\"$email\") | .email" 2>/dev/null || echo "")
+            
+            if [ "$existing" = "$email" ]; then
+              echo "⏭️ User $email already exists, skipping..."
+              return 0
+            fi
+            
+            echo "➕ Creating user: $email..."
+            response=$(curl -s -X POST \
+              "https://${SUPABASE_PROJECT_ID}.supabase.co/auth/v1/admin/users" \
+              -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+              -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+              -H "Content-Type: application/json" \
+              -d "{
+                \"email\": \"$email\",
+                \"password\": \"$password\",
+                \"email_confirm\": true,
+                \"user_metadata\": {
+                  \"full_name\": \"$full_name\",
+                  \"must_change_password\": true
+                }
+              }")
+            
+            if echo "$response" | jq -e '.id' > /dev/null 2>&1; then
+              echo "✅ User $email created successfully"
+            else
+              echo "⚠️ Could not create $email: $response"
+            fi
+          }
+          
+          TEST_PASSWORD="Temp@123"
+          
+          # Create all test users (only if not existing)
+          create_user_if_not_exists "admin@test.com" "$TEST_PASSWORD" "Admin Teste"
+          create_user_if_not_exists "user@test.com" "$TEST_PASSWORD" "Usuário Comum"
+          create_user_if_not_exists "gym@test.com" "$TEST_PASSWORD" "Academia Teste"
+          create_user_if_not_exists "pt@test.com" "$TEST_PASSWORD" "Personal Trainer"
+          create_user_if_not_exists "nutritionist@test.com" "$TEST_PASSWORD" "Nutricionista Teste"
+          create_user_if_not_exists "student1@test.com" "$TEST_PASSWORD" "Aluno 1"
+          create_user_if_not_exists "student2@test.com" "$TEST_PASSWORD" "Aluno 2"
+          create_user_if_not_exists "student3@test.com" "$TEST_PASSWORD" "Aluno 3"
+          
+          echo "✅ Test users check complete"
+
+      - name: 🎉 Done
+        run: |
+          echo "✅ Migration deployment completed successfully!"
+          echo "📝 Summary:"
+          echo "   - Migrations applied: ✅"
+          echo "   - Test users: ${{ github.event.inputs.create_test_users == 'true' && '✅ Checked/Created' || '⏭️ Skipped' }}"

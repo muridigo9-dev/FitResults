@@ -1,0 +1,54 @@
+name: 🚀 Deploy Manual (Migrations & Edge Functions)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Type 'DEPLOY' to confirm deployment"
+        required: true
+        default: "NO"
+
+jobs:
+  deploy:
+    name: Deploy to Supabase
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+
+    steps:
+      - name: 📦 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🛑 Safety check
+        run: |
+          if [ "${{ github.event.inputs.confirm }}" != "DEPLOY" ]; then
+            echo "❌ You must type DEPLOY to proceed"
+            exit 1
+          fi
+
+      - name: 🔧 Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: 🔐 Login Supabase
+        run: supabase login --token "$SUPABASE_ACCESS_TOKEN"
+
+      - name: 🔗 Link Supabase Project
+        run: |
+          supabase link --project-ref "$SUPABASE_PROJECT_ID" --password "$SUPABASE_DB_PASSWORD"
+
+      - name: 🔄 Apply Database Migrations
+        run: |
+          # Precisamos definir a senha no ambiente para o db push funcionar sem prompt
+          export PGPASSWORD="$SUPABASE_DB_PASSWORD"
+          supabase db push --include-all
+
+      - name: ⚡ Deploy Edge Functions
+        run: |
+          supabase functions deploy --project-ref "$SUPABASE_PROJECT_ID" --no-verify-jwt
+
+      - name: 🎉 Done
+        run: echo "✅ Deployment completed successfully!"

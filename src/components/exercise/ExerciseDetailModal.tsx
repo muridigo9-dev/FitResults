@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { ExerciseDetailView } from "./ExerciseDetailView";
+import { resolveImageUrl } from "@/hooks/useStorageUpload";
 import type { Exercise } from "@/types/content";
 import { Button } from "@/components/ui/button";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
@@ -88,10 +89,7 @@ export function ExerciseDetailModal({
                                         )}
                                     >
                                         <img
-                                            src={ex.imagePath
-                                                ? `https://rjzziwcytyvjaurouaun.supabase.co/storage/v1/object/public/exercises-media/${ex.imagePath.includes('exercises-media/') ? ex.imagePath.split('exercises-media/')[1] : ex.imagePath}`
-                                                : (ex.imageUrl || ex.gifUrl || "/placeholder.svg")
-                                            }
+                                            src={ex.gifUrl || resolveImageUrl('exercises-media', ex.imagePath, ex.imageUrl)}
                                             className="h-full w-full object-cover"
                                             alt=""
                                             onError={(e) => { (e.target as HTMLImageElement).src = "/placeholder.svg" }}

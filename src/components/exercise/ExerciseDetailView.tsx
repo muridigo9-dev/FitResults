@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { MarkAsDoneButton } from "./MarkAsDoneButton";
 import { ExerciseHistory } from "./ExerciseHistory";
 import { ManualExerciseLogModal, ManualLogData } from "./ManualExerciseLogModal";
+import { resolveImageUrl } from "@/hooks/useStorageUpload";
 import type { Exercise } from "@/types/content";
 import { useDiary } from "@/contexts/DiaryContext";
 import { useState } from "react";
@@ -42,13 +43,8 @@ export function ExerciseDetailView({
 
     const getMediaUrl = () => {
         if (!exercise.imagePath && !exercise.imageUrl && !exercise.gifUrl) return "/placeholder.svg";
-        if (exercise.imagePath) {
-            const cleanPath = exercise.imagePath.includes('exercises-media/')
-                ? exercise.imagePath.split('exercises-media/')[1]
-                : exercise.imagePath;
-            return `https://rjzziwcytyvjaurouaun.supabase.co/storage/v1/object/public/exercises-media/${cleanPath}`;
-        }
-        return exercise.imageUrl || exercise.gifUrl || "/placeholder.svg";
+        if (exercise.gifUrl) return exercise.gifUrl;
+        return resolveImageUrl('exercises-media', exercise.imagePath, exercise.imageUrl);
     };
 
     const mediaUrl = getMediaUrl();

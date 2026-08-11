@@ -1,526 +1,460 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Dumbbell,
+  Check,
   ArrowRight,
+  ChevronDown,
+  Star,
+  Shield,
+  CreditCard,
+  Sparkles,
   Droplets,
   Moon,
   Utensils,
   Trophy,
-  LogIn,
-  Check,
-  Users,
-  BarChart3,
   Target,
-  Scale,
   CalendarCheck,
-  Smartphone,
-  Shield,
+  TrendingUp,
   Zap,
-  Heart,
-  Award,
-  MessageSquare,
   Bell,
-  Palette,
+  Smartphone,
   Globe,
-  CreditCard,
-  Building2,
-  UserCog,
-  FileText,
-  Settings,
-  LineChart,
-  Sparkles,
-  ChevronRight,
-  Star,
+  Lock,
 } from "lucide-react";
 import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
-import { useGlobalBranding, applyBrandingToDOM } from "@/hooks/useBranding";
-import { useI18n } from "@/hooks/useI18n";
-import { useEffect } from "react";
-import { useBrandingContext } from "@/contexts/BrandingContext";
+import { useGlobalBranding } from "@/hooks/useBranding";
+import "./LandingPage.css";
 
+// ===== DATA =====
+const plans = [
+  {
+    name: "Plano Mensal",
+    renew: "Renova automaticamente em R$ 29,90 a cada mês, até você cancelar.",
+    price: "R$ 29,90",
+    period: "/mês",
+    popular: false,
+  },
+  {
+    name: "Plano Trimestral",
+    renew: "Renova automaticamente em R$ 79,90 a cada 3 meses, até você cancelar.",
+    price: "R$ 79,90",
+    period: "/trimestre",
+    popular: true,
+  },
+  {
+    name: "Plano Anual",
+    renew: "Renova automaticamente em R$ 239,90 a cada 12 meses, até você cancelar.",
+    price: "R$ 239,90",
+    period: "/ano",
+    popular: false,
+  },
+];
+
+const steps = [
+  {
+    num: "1",
+    title: "Escolha seu plano",
+    desc: "Escolha a opção mensal, trimestral ou anual. O preço de entrada e o de renovação aparecem juntos — o que você vê é exatamente o que paga.",
+  },
+  {
+    num: "2",
+    title: "Crie sua conta",
+    desc: "Cadastre-se em segundos com e-mail ou login social. Você revisa e confirma tudo antes de qualquer pagamento.",
+  },
+  {
+    num: "3",
+    title: "Comece a evoluir",
+    desc: "Registre treinos, refeições e hábitos diários. Acompanhe seu progresso e ajuste tudo quando quiser, direto da página de perfil.",
+  },
+];
+
+const included = [
+  { icon: CalendarCheck, text: "Check-in diário: água, sono, treino e refeições" },
+  { icon: Dumbbell, text: "Treinos guiados e biblioteca de exercícios" },
+  { icon: Utensils, text: "Planos alimentares e contagem de macros" },
+  { icon: Trophy, text: "Gamificação com XP, níveis e conquistas" },
+  { icon: TrendingUp, text: "Gráficos de progresso e métricas de evolução" },
+  { icon: Bell, text: "Lembretes suaves — você pode desativar quando quiser" },
+  { icon: Smartphone, text: "Funciona no celular: instale como app (PWA)" },
+  { icon: Shield, text: "Garantia de 7 dias no seu primeiro pedido" },
+  { icon: Zap, text: "Cancele quando quiser, sem ligações e sem burocracia" },
+];
+
+const testimonials = [
+  {
+    initials: "MC",
+    name: "Mariana Costa",
+    role: "Usuária verificada",
+    text: "Finalmente um lugar para registrar tudo — treino, água e refeições em um só app. <strong>Muito motivador!</strong> Já recomendei para as minhas amigas.",
+  },
+  {
+    initials: "JR",
+    name: "João Ribeiro",
+    role: "Usuário verificado",
+    text: "O check-in diário me trouxe uma constância que eu nunca tive. <strong>Três meses seguidos</strong> sem perder o ritmo. O melhor investimento da minha rotina.",
+  },
+  {
+    initials: "AS",
+    name: "Aline Santos",
+    role: "Usuária verificada",
+    text: "Consegui cancelar e receber meu reembolso rapidinho, com atendimento muito atencioso. Mas logo voltei, porque <strong>sinto falta do app</strong>.",
+  },
+];
+
+const faqs = [
+  {
+    q: "Como funciona a cobrança?",
+    a: "No dia da compra você paga o preço de entrada do plano escolhido. A menos que você cancele, o plano renova automaticamente pelo preço de renovação indicado no plano (mais os impostos aplicáveis) ao final de cada período. O valor e a data de renovação sempre aparecem antes de você confirmar o pedido.",
+  },
+  {
+    q: "Como eu cancelo?",
+    a: "Você pode cancelar quando quiser, direto das configurações da sua conta — sem ligações e sem formulários. Ao cancelar, o acesso continua até o fim do período já pago.",
+  },
+  {
+    q: "Qual é a política de reembolso?",
+    a: "Oferecemos garantia incondicional de 7 dias no seu primeiro pedido. Se não gostar, é só solicitar o reembolso e devolvemos seu dinheiro. Consulte a política de assinatura e reembolso para mais detalhes.",
+  },
+  {
+    q: "Preciso pagar para começar?",
+    a: "Você cria sua conta gratuitamente e só decide pelo plano quando estiver pronto. Nenhum valor é cobrado sem a sua confirmação explícita.",
+  },
+  {
+    q: "O app funciona no meu celular?",
+    a: "Sim! O FitResults é um PWA (Progressive Web App) que pode ser instalado direto no seu celular, como um app nativo — em Android, iOS e também no computador.",
+  },
+  {
+    q: "É adequado para o meu nível de condicionamento?",
+    a: "Sim. Você define seus objetivos, nível atual e preferências durante o cadastro, e a experiência se adapta a você. O FitResults oferece informações gerais sobre fitness e nutrição e não substitui aconselhamento médico — consulte seu médico antes de iniciar qualquer programa.",
+  },
+];
+
+// ===== COMPONENT =====
 export default function LandingPage() {
-  const { t } = useI18n();
   const { branding } = useGlobalBranding();
-  const { isDarkMode: userThemePreference } = useBrandingContext();
-  const isDark = branding.landingPageTheme === "dark";
+  const [selectedPlan, setSelectedPlan] = useState(1);
+  const [openFaq, setOpenFaq] = useState<number | null>(0);
 
-  // Note: Theme forcing for Landing Page is now handled globally in BrandingContext.tsx
-  // based on the location.pathname === '/' check.
+  const appName = branding.appName || "FitResults";
 
-  // Feature categories with icons and descriptions
-  const featureCategories = [
-    {
-      title: t("landing.features.categories.users.title"),
-      icon: Users,
-      color: "primary",
-      features: t("landing.features.categories.users.items", { returnObjects: true }) as unknown as string[] || [],
-    },
-    {
-      title: t("landing.features.categories.dashboard.title"),
-      icon: BarChart3,
-      color: "tertiary",
-      features: t("landing.features.categories.dashboard.items", { returnObjects: true }) as unknown as string[] || [],
-    },
-    {
-      title: t("landing.features.categories.checkin.title"),
-      icon: CalendarCheck,
-      color: "accent",
-      features: t("landing.features.categories.checkin.items", { returnObjects: true }) as unknown as string[] || [],
-    },
-    {
-      title: t("landing.features.categories.nutrition.title"),
-      icon: Utensils,
-      color: "habit-meals",
-      features: t("landing.features.categories.nutrition.items", { returnObjects: true }) as unknown as string[] || [],
-    },
-    {
-      title: t("landing.features.categories.workouts.title"),
-      icon: Dumbbell,
-      color: "habit-workout",
-      features: t("landing.features.categories.workouts.items", { returnObjects: true }) as unknown as string[] || [],
-    },
-    {
-      title: t("landing.features.categories.gamification.title"),
-      icon: Trophy,
-      color: "level-gold",
-      features: t("landing.features.categories.gamification.items", { returnObjects: true }) as unknown as string[] || [],
-    },
-    {
-      title: t("landing.features.categories.habits.title"),
-      icon: Target,
-      color: "success",
-      features: t("landing.features.categories.habits.items", { returnObjects: true }) as unknown as string[] || [],
-    },
-    {
-      title: t("landing.features.categories.metrics.title"),
-      icon: Scale,
-      color: "quaternary",
-      features: t("landing.features.categories.metrics.items", { returnObjects: true }) as unknown as string[] || [],
-    },
-    {
-      title: t("landing.features.categories.trainer.title"),
-      icon: UserCog,
-      color: "primary",
-      features: t("landing.features.categories.trainer.items", { returnObjects: true }) as unknown as string[] || [],
-    },
-    {
-      title: t("landing.features.categories.communication.title"),
-      icon: MessageSquare,
-      color: "tertiary",
-      features: t("landing.features.categories.communication.items", { returnObjects: true }) as unknown as string[] || [],
-    },
-    {
-      title: t("landing.features.categories.admin_panel.title"),
-      icon: Settings,
-      color: "muted-foreground",
-      features: t("landing.features.categories.admin_panel.items", { returnObjects: true }) as unknown as string[] || [],
-    },
-    {
-      title: t("landing.features.categories.branding.title"),
-      icon: Palette,
-      color: "accent",
-      features: t("landing.features.categories.branding.items", { returnObjects: true }) as unknown as string[] || [],
-    },
-  ];
-
-  const techFeatures = [
-    {
-      icon: Smartphone,
-      title: t("landing.tech.pwa.title"),
-      description: t("landing.tech.pwa.desc"),
-    },
-    {
-      icon: Globe,
-      title: t("landing.tech.multiLanguage.title"),
-      description: t("landing.tech.multiLanguage.desc"),
-    },
-    {
-      icon: Shield,
-      title: t("landing.tech.security.title"),
-      description: t("landing.tech.security.desc"),
-    },
-    {
-      icon: CreditCard,
-      title: t("landing.tech.stripe.title"),
-      description: t("landing.tech.stripe.desc"),
-    },
-    {
-      icon: Zap,
-      title: t("landing.tech.performance.title"),
-      description: t("landing.tech.performance.desc"),
-    },
-    {
-      icon: Building2,
-      title: t("landing.tech.multiTenant.title"),
-      description: t("landing.tech.multiTenant.desc"),
-    },
-  ];
-
-  const testimonials = (t("landing.testimonials.items", { returnObjects: true }) as unknown as any[]) || [
-    {
-      name: "Carlos Silva",
-      role: t("landing.testimonials.roles.trainer"),
-      image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1470&auto=format&fit=crop",
-      text: t("landing.testimonials.texts.trainer"),
-    },
-    {
-      name: "Ana Oliveira",
-      role: t("landing.testimonials.roles.student"),
-      image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=1470&auto=format&fit=crop",
-      text: t("landing.testimonials.texts.student"),
-    },
-    {
-      name: "Pedro Santos",
-      role: t("landing.testimonials.roles.gymOwner"),
-      image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=1470&auto=format&fit=crop",
-      text: t("landing.testimonials.texts.gymOwner"),
-    },
-  ];
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+    <div className="lp-root">
+      {/* ===== HEADER ===== */}
+      <header className="lp-header">
+        <div className="lp-container lp-header-inner">
+          <Link to="/" className="lp-logo">
             {branding.logoUrl ? (
-              <img src={branding.logoUrl} alt={branding.appName} className="h-9 w-auto object-contain" />
+              <span className="lp-logo-mark">
+                <img src={branding.logoUrl} alt={appName} />
+              </span>
             ) : (
-              <div className="h-9 w-9 rounded-xl bg-primary flex items-center justify-center">
-                <Dumbbell className="h-5 w-5 text-primary-foreground" />
-              </div>
+              <span className="lp-logo-mark">
+                <Dumbbell size={18} />
+              </span>
             )}
-            <span className="font-bold text-xl text-foreground">{branding.appName}</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <LanguageSwitcher showLabel={false} className="mr-2" />
-            <Button asChild variant="ghost" size="sm">
-              <Link to="/auth">
-                <LogIn className="h-4 w-4 mr-2" />
-                {t("landing.nav.login")}
-              </Link>
-            </Button>
-            <Button asChild size="sm">
-              <Link to="/checkout">
-                {t("landing.nav.subscribe")}
-                <ArrowRight className="h-4 w-4 ml-2" />
-              </Link>
-            </Button>
+            <span className="lp-logo-name">{appName}</span>
+          </Link>
+
+          <nav className="lp-nav">
+            <a className="lp-nav-link" href="#como-funciona">Como funciona</a>
+            <a className="lp-nav-link" href="#incluso">O que está incluso</a>
+            <a className="lp-nav-link" href="#faq">FAQ</a>
+          </nav>
+
+          <div className="lp-header-right">
+            <LanguageSwitcher showLabel={false} />
+            <Link to="/auth" className="lp-header-login">Entrar</Link>
+            <Link to="/checkout" className="lp-btn lp-btn-header">
+              Ver planos e preços <ArrowRight size={16} />
+            </Link>
           </div>
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary-soft via-background to-background" />
-        <div className="container mx-auto px-4 py-20 md:py-32 relative">
-          <div className="max-w-4xl mx-auto text-center">
-            <Badge className="mb-6 bg-primary/10 text-primary border-primary/20 hover:bg-primary/20">
-              <Sparkles className="h-3 w-3 mr-1" />
-              {t("landing.hero.badge")}
-            </Badge>
-            <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6 leading-tight">
-              {t("landing.hero.title")
-                .split("{highlight}")
-                .map((part, i, arr) => (
-                  <span key={i}>
-                    {part}
-                    {i < arr.length - 1 && (
-                      <span className="text-gradient-primary">
-                        {t("landing.hero.highlight")}
+      {/* ===== HERO ===== */}
+      <section className="lp-hero" id="top">
+        <div className="lp-container">
+          <div className="lp-hero-badge">
+            <Sparkles size={16} />
+            Check-in, treinos e nutrição em um só lugar
+          </div>
+          <h1>
+            Seus treinos, sua alimentação e seus hábitos — <span>no seu ritmo</span>.
+          </h1>
+          <p className="lp-hero-desc">
+            O {appName} reúne check-ins diários, planos de treino e orientação
+            nutricional em um único app. Acompanhe sua evolução, mantenha a constância
+            e veja resultados reais — com todos os preços exibidos antes de você pagar.
+          </p>
+          <div className="lp-hero-ctas">
+            <Link to="/checkout" className="lp-btn lp-btn-primary">
+              Ver planos e preços <ArrowRight size={18} />
+            </Link>
+            <a href="#como-funciona" className="lp-btn lp-btn-outline">
+              Ver como funciona
+            </a>
+          </div>
+          <div className="lp-hero-trust">
+            <span><Check size={16} /> Sem fidelidade</span>
+            <span><Check size={16} /> Cancele quando quiser</span>
+            <span><Check size={16} /> Garantia de 7 dias</span>
+          </div>
+        </div>
+      </section>
+
+      {/* ===== PLANS ===== */}
+      <section className="lp-plans" id="planos">
+        <div className="lp-container">
+          <p className="lp-plans-note">
+            Escolha entre os planos mensal, trimestral ou anual. Todos os preços são
+            exibidos antes do pagamento — sem renovações ocultas e sem surpresas na
+            letra pequena.
+          </p>
+
+          <div className="lp-plans-grid">
+            {plans.map((plan, i) => (
+              plan.popular ? (
+                <div key={i} className="lp-plan-cell">
+                  <div className="lp-plan-popular">
+                    <span className="lp-plan-popular-badge">Mais popular</span>
+                  </div>
+                  <div
+                    className={`lp-plan-card has-popular ${selectedPlan === i ? "selected" : ""}`}
+                    onClick={() => setSelectedPlan(i)}
+                  >
+                    <div className="lp-plan-radio-row">
+                      <span className="lp-plan-radio">
+                        {selectedPlan === i && <span className="lp-plan-radio-dot" />}
                       </span>
-                    )}
-                  </span>
-                ))}
-            </h1>
-            <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-              {branding.tagline || t("landing.hero.subtitle")}
+                      <span className="lp-plan-name">{plan.name}</span>
+                    </div>
+                    <p className="lp-plan-renew">{plan.renew}</p>
+                    <div className="lp-plan-price">
+                      {plan.price} <span>{plan.period}</span>
+                    </div>
+                    <Link to="/checkout" className="lp-plan-cta">
+                      Começar <ArrowRight size={16} />
+                    </Link>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  key={i}
+                  className={`lp-plan-card ${selectedPlan === i ? "selected" : ""}`}
+                  onClick={() => setSelectedPlan(i)}
+                >
+                  <div className="lp-plan-radio-row">
+                    <span className="lp-plan-radio">
+                      {selectedPlan === i && <span className="lp-plan-radio-dot" />}
+                    </span>
+                    <span className="lp-plan-name">{plan.name}</span>
+                  </div>
+                  <p className="lp-plan-renew">{plan.renew}</p>
+                  <div className="lp-plan-price">
+                    {plan.price} <span>{plan.period}</span>
+                  </div>
+                  <Link to="/checkout" className="lp-plan-cta">
+                    Começar <ArrowRight size={16} />
+                  </Link>
+                </div>
+              )
+            ))}
+          </div>
+
+          <div className="lp-plans-footer">
+            <p className="lp-plans-note" style={{ marginBottom: 0 }}>
+              Nenhum pagamento é feito nesta etapa — você revisa e confirma seu plano
+              na página de checkout.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button asChild size="xl" className="text-lg px-8">
-                <Link to="/checkout">
-                  {t("landing.hero.ctaStart")}
-                  <ArrowRight className="h-5 w-5 ml-2" />
-                </Link>
-              </Button>
-              <Button asChild variant="outline" size="xl" className="text-lg px-8">
-                <Link to="/auth">
-                  <LogIn className="h-5 w-5 mr-2" />
-                  {t("landing.hero.ctaAccount")}
-                </Link>
-              </Button>
-            </div>
-
-            {/* Quick stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-16 max-w-3xl mx-auto">
-              {[
-                { value: t("landing.stats.featuresVal"), label: t("landing.stats.features") },
-                { value: t("landing.stats.languagesVal"), label: t("landing.stats.languages") },
-                { value: t("landing.stats.mobileVal"), label: t("landing.stats.mobile") },
-                { value: t("landing.stats.supportVal"), label: t("landing.stats.support") },
-              ].map((stat, i) => (
-                <div key={i} className="text-center">
-                  <div className="text-3xl font-bold text-primary">{stat.value}</div>
-                  <div className="text-sm text-muted-foreground">{stat.label}</div>
-                </div>
-              ))}
+            <Link to="/checkout" className="lp-btn lp-btn-dark" style={{ fontSize: "1.1rem", padding: "18px 44px" }}>
+              Obter meu plano <ArrowRight size={20} />
+            </Link>
+            <div className="lp-plans-secure">
+              <span><Shield size={16} /> Pagamento seguro e criptografado</span>
+              <span><CreditCard size={16} /> Todos os cartões e Pix</span>
+              <span><Check size={16} /> Garantia de 7 dias</span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Habit Icons Section */}
-      <section className="py-12 border-y bg-muted/30">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-wrap items-center justify-center gap-8 md:gap-16">
-            {[
-              { icon: Droplets, label: t("landing.habits.hydration"), color: "habit-water" },
-              { icon: Moon, label: t("landing.habits.sleep"), color: "habit-sleep" },
-              { icon: Dumbbell, label: t("landing.habits.training"), color: "habit-workout" },
-              { icon: Utensils, label: t("landing.habits.nutrition"), color: "habit-meals" },
-              { icon: Heart, label: t("landing.habits.wellbeing"), color: "accent" },
-              { icon: Target, label: t("landing.habits.goals"), color: "success" },
-            ].map((item, i) => {
-              const Icon = item.icon;
-              return (
-                <div key={i} className="flex items-center gap-3">
-                  <div className={`h-12 w-12 rounded-2xl bg-${item.color}/10 flex items-center justify-center border border-${item.color}/20`}>
-                    <Icon className={`h-6 w-6 text-${item.color}`} />
-                  </div>
-                  <span className="font-medium text-foreground">{item.label}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* Features Grid */}
-      <section className="py-20 md:py-32">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <Badge className="mb-4 bg-accent/10 text-accent border-accent/20">
-              {t("landing.features.badge")}
-            </Badge>
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              {t("landing.features.title")}
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              {t("landing.features.subtitle")}
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {featureCategories.map((category, i) => {
-              const Icon = category.icon;
-              return (
-                <Card key={i} className="group hover:shadow-lg transition-all duration-300 border-border/50 hover:border-primary/30">
-                  <CardContent className="p-6">
-                    <div className="flex items-start gap-4 mb-4">
-                      <div className={`h-12 w-12 rounded-2xl bg-${category.color}/10 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform`}>
-                        <Icon className={`h-6 w-6 text-${category.color}`} />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-lg text-foreground">{category.title}</h3>
-                      </div>
-                    </div>
-                    <ul className="space-y-2">
-                      {category.features.map((feature, j) => (
-                        <li key={j} className="flex items-start gap-2 text-sm text-muted-foreground">
-                          <Check className="h-4 w-4 text-success flex-shrink-0 mt-0.5" />
-                          <span>{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* Tech Features */}
-      <section className="py-20 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <Badge className="mb-4 bg-tertiary/10 text-tertiary border-tertiary/20">
-              {t("landing.tech.badge")}
-            </Badge>
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              {t("landing.tech.title")}
-            </h2>
-          </div>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {techFeatures.map((feature, i) => {
-              const Icon = feature.icon;
-              return (
-                <div key={i} className="flex items-start gap-4 p-6 rounded-2xl bg-background border border-border/50">
-                  <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    <Icon className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-foreground mb-1">{feature.title}</h3>
-                    <p className="text-sm text-muted-foreground">{feature.description}</p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* Admin Panel Features */}
-      <section className="py-20 md:py-32">
-        <div className="container mx-auto px-4">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <Badge className="mb-4 bg-quaternary/10 text-quaternary border-quaternary/20">
-                {t("landing.admin_preview.badge")}
-              </Badge>
-              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">
-                {t("landing.admin_preview.title")}
-              </h2>
-              <p className="text-lg text-muted-foreground mb-8">
-                {t("landing.admin_preview.desc")}
-              </p>
-              <div className="space-y-4">
-                {(t("landing.admin_preview.items", { returnObjects: true }) as unknown as string[] || []).map((item, i) => {
-                  const itemsIcons = [Users, FileText, CreditCard, LineChart, Bell, Settings];
-                  const Icon = itemsIcons[i] || Settings;
-                  return (
-                    <div key={i} className="flex items-center gap-3">
-                      <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                        <Icon className="h-4 w-4 text-primary" />
-                      </div>
-                      <span className="text-foreground">{item}</span>
-                    </div>
-                  );
-                })}
+      {/* ===== HOW IT WORKS ===== */}
+      <section className="lp-section lp-section-alt" id="como-funciona">
+        <div className="lp-container">
+          <h2 className="lp-section-title">Como funciona</h2>
+          <p className="lp-section-subtitle">
+            Três passos simples — você tem o controle em todo momento. Você revisa e
+            confirma seu plano completo antes de qualquer pagamento.
+          </p>
+          <div className="lp-steps-grid">
+            {steps.map((step, i) => (
+              <div key={i} className="lp-step">
+                <div className="lp-step-num">{step.num}</div>
+                <h3>{step.title}</h3>
+                <p>{step.desc}</p>
               </div>
-            </div>
-            <div className="relative">
-              <div className="aspect-video rounded-2xl bg-gradient-to-br from-primary/20 via-tertiary/20 to-quaternary/20 flex items-center justify-center border border-border/50">
-                <div className="text-center">
-                  <Settings className="h-16 w-16 text-primary/50 mx-auto mb-4" />
-                  <p className="text-muted-foreground">{t("landing.admin_preview.previewText")}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials */}
-      <section className="py-20 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <Badge className="mb-4 bg-success/10 text-success border-success/20">
-              {t("landing.testimonials.badge")}
-            </Badge>
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              {t("landing.testimonials.title")}
-            </h2>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {testimonials.map((testimonial, i) => (
-              <Card key={i} className="border-border/50">
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-1 mb-4">
-                    {[...Array(5)].map((_, j) => (
-                      <Star key={j} className="h-4 w-4 fill-level-gold text-level-gold" />
-                    ))}
-                  </div>
-                  <p className="text-muted-foreground mb-6">"{testimonial.text}"</p>
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center font-semibold text-primary text-sm">
-                      {testimonial.avatar}
-                    </div>
-                    <div>
-                      <div className="font-semibold text-foreground text-sm">{testimonial.name}</div>
-                      <div className="text-xs text-muted-foreground">{testimonial.role}</div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
             ))}
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-20 md:py-32">
-        <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto text-center">
-            <div className="h-20 w-20 rounded-3xl bg-primary flex items-center justify-center mx-auto mb-8 shadow-glow overflow-hidden">
-              {branding.logoUrl ? (
-                <img src={branding.logoUrl} alt={branding.appName} className="w-full h-full object-contain p-4" />
-              ) : (
-                <Award className="h-10 w-10 text-primary-foreground" />
-              )}
-            </div>
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">
-              {t("landing.cta.title")}
-            </h2>
-            <p className="text-xl text-muted-foreground mb-8">
-              {t("landing.cta.subtitle")}
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button asChild size="xl" className="text-lg px-8">
-                <Link to="/checkout">
-                  {t("landing.cta.ctaFree")}
-                  <ArrowRight className="h-5 w-5 ml-2" />
-                </Link>
-              </Button>
-              <Button asChild variant="outline" size="xl" className="text-lg px-8">
-                <a href={`mailto:${branding.supportEmail}`}>
-                  {t("landing.cta.ctaSales")}
-                  <ChevronRight className="h-5 w-5 ml-2" />
-                </a>
-              </Button>
-            </div>
+      {/* ===== INCLUDED ===== */}
+      <section className="lp-section" id="incluso">
+        <div className="lp-container">
+          <h2 className="lp-section-title">O que está incluso</h2>
+          <p className="lp-section-subtitle">
+            Um plano completo — você só escolhe o período. Todos os planos incluem a
+            experiência completa do {appName}. O único que muda é a forma de cobrança.
+          </p>
+          <div className="lp-included-grid">
+            {included.map((item, i) => {
+              const Icon = item.icon;
+              return (
+                <div key={i} className="lp-included-item">
+                  <Icon size={20} />
+                  <span>{item.text}</span>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-12 border-t bg-muted/30">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              {branding.logoUrl ? (
-                <img src={branding.logoUrl} alt={branding.appName} className="h-8 w-auto object-contain" />
-              ) : (
-                <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-                  <Dumbbell className="h-4 w-4 text-primary-foreground" />
+      {/* ===== TESTIMONIALS ===== */}
+      <section className="lp-section lp-section-alt" id="depoimentos">
+        <div className="lp-container">
+          <h2 className="lp-section-title">Nossos membros opinam</h2>
+          <p className="lp-section-subtitle">
+            A confiança de quem procurava um começo mais simples.
+          </p>
+          <div className="lp-testimonials-rating">
+            <div className="lp-testimonials-stars">
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} size={18} fill="var(--lp-star)" color="var(--lp-star)" />
+              ))}
+            </div>
+            <span className="lp-testimonials-score">4,6 / 5</span>
+          </div>
+          <p className="lp-testimonials-count">+2.300 avaliações verificadas</p>
+
+          <div className="lp-testimonials-grid">
+            {testimonials.map((t, i) => (
+              <div key={i} className="lp-testimonial-card">
+                <div className="lp-testimonial-stars">
+                  {[...Array(5)].map((_, j) => (
+                    <Star key={j} size={16} fill="var(--lp-star)" color="var(--lp-star)" />
+                  ))}
                 </div>
-              )}
-              <span className="font-semibold text-foreground">{branding.appName}</span>
+                <p className="lp-testimonial-text" dangerouslySetInnerHTML={{ __html: t.text }} />
+                <div className="lp-testimonial-footer">
+                  <div className="lp-testimonial-avatar">{t.initials}</div>
+                  <div>
+                    <div className="lp-testimonial-name">{t.name}</div>
+                    <div className="lp-testimonial-role">
+                      <Check size={12} style={{ verticalAlign: "-2px", marginRight: 2 }} />
+                      {t.role}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <p className="lp-testimonials-note">
+            As avaliações refletem experiências e pontos de vista individuais dos
+            membros; os resultados variam e não são garantidos. As avaliações são de
+            compradores verificados e não são incentivadas. O {appName} não oferece
+            aconselhamento médico — consulte seu médico antes de iniciar qualquer
+            programa de exercícios ou nutrição.
+          </p>
+        </div>
+      </section>
+
+      {/* ===== FAQ ===== */}
+      <section className="lp-section" id="faq">
+        <div className="lp-container">
+          <h2 className="lp-section-title">Perguntas, respondidas</h2>
+          <p className="lp-section-subtitle">Perguntas frequentes</p>
+          <div className="lp-faq-wrap">
+            {faqs.map((faq, i) => (
+              <div
+                key={i}
+                className={`lp-faq-item ${openFaq === i ? "open" : ""}`}
+              >
+                <div className="lp-faq-q" onClick={() => setOpenFaq(openFaq === i ? null : i)}>
+                  {faq.q}
+                  <ChevronDown size={20} />
+                </div>
+                {openFaq === i && <div className="lp-faq-a">{faq.a}</div>}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ===== FINAL CTA ===== */}
+      <section className="lp-final">
+        <div className="lp-container">
+          <h2>Comece agora, no seu ritmo</h2>
+          <p>
+            Registre seus hábitos, treinos e refeições e acompanhe sua evolução todos
+            os dias. Sem fidelidade, sem mensalidades escondidas — e com preços
+            sempre claros antes de você pagar.
+          </p>
+          <Link to="/checkout" className="lp-btn lp-btn-primary" style={{ fontSize: "1.05rem", padding: "18px 44px" }}>
+            Ver planos e preços <ArrowRight size={20} />
+          </Link>
+          <div className="lp-plans-secure" style={{ marginTop: 24 }}>
+            <span><Lock size={16} /> Compra 100% segura</span>
+            <span><Globe size={16} /> Pagamento via Stripe</span>
+            <span><Check size={16} /> Garantia de 7 dias</span>
+          </div>
+        </div>
+      </section>
+
+      {/* ===== FOOTER ===== */}
+      <footer className="lp-footer">
+        <div className="lp-container">
+          <div className="lp-footer-grid">
+            <div className="lp-footer-brand">
+              <Link to="/" className="lp-logo">
+                {branding.logoUrl ? (
+                  <span className="lp-logo-mark"><img src={branding.logoUrl} alt={appName} /></span>
+                ) : (
+                  <span className="lp-logo-mark"><Dumbbell size={18} /></span>
+                )}
+                <span className="lp-logo-name">{appName}</span>
+              </Link>
+              <p className="lp-footer-tagline">
+                {branding.tagline || "Seu app de saúde e bem-estar. Acompanhe dietas, treinos e progresso."}
+              </p>
             </div>
-            <p className="text-sm text-muted-foreground">
-              {t("landing.footer.rights")}
-            </p>
-            <div className="flex items-center gap-4">
-              <Link to="/auth" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                {t("landing.footer.links.login")}
-              </Link>
-              <Link to="/checkout" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                {t("landing.footer.links.plans")}
-              </Link>
-              <Link to="/privacy" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                {t("landing.footer.links.privacy")}
-              </Link>
-              <Link to="/terms" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                {t("landing.footer.links.terms")}
-              </Link>
+            <div className="lp-footer-links">
+              <strong>Navegação</strong>
+              <a href="#como-funciona">Como funciona</a>
+              <a href="#incluso">O que está incluso</a>
+              <a href="#faq">Perguntas frequentes</a>
             </div>
+            <div className="lp-footer-links">
+              <strong>Conta</strong>
+              <Link to="/auth">Entrar</Link>
+              <Link to="/checkout">Ver planos e preços</Link>
+              <a href={`mailto:${branding.supportEmail}`}>Contato</a>
+            </div>
+            <div className="lp-footer-links">
+              <strong>Legal</strong>
+              <Link to="/terms">Termos de Serviço</Link>
+              <Link to="/privacy">Política de Privacidade</Link>
+              <Link to="/privacy">Política de Reembolso</Link>
+            </div>
+          </div>
+          <div className="lp-footer-bottom">
+            <span>© {new Date().getFullYear()} {appName}. Todos os direitos reservados.</span>
+            <LanguageSwitcher showLabel={false} />
           </div>
         </div>
       </footer>
     </div>
   );
 }
+

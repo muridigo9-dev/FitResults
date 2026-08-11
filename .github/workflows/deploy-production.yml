@@ -48,7 +48,13 @@ jobs:
 
       - name: ⚡ Deploy Edge Functions
         run: |
-          supabase functions deploy --project-ref "$SUPABASE_PROJECT_ID" --no-verify-jwt
+          # No --no-verify-jwt. That flag applies to *every* function in one
+          # sweep, which would strip the JWT gate off stripe-admin — the
+          # administrative half that was split out of stripe-webhook precisely
+          # so it could be gated. Without the flag the CLI honours the
+          # per-function `verify_jwt` in supabase/config.toml, which is where
+          # that decision actually belongs.
+          supabase functions deploy --project-ref "$SUPABASE_PROJECT_ID"
 
       - name: 🎉 Done
         run: echo "✅ Deployment completed successfully!"

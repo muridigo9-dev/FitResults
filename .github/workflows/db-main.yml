@@ -146,6 +146,11 @@ jobs:
           supabase functions deploy process-cancellation --no-verify-jwt
           supabase functions deploy send-email --no-verify-jwt
           supabase functions deploy stripe-webhook --no-verify-jwt
+          # No --no-verify-jwt: admin-only actions, called from the panel with a
+          # user JWT. Deploying it open would undo the split from stripe-webhook.
+          supabase functions deploy stripe-admin
+          # Authenticated by HMAC signature, not by JWT.
+          supabase functions deploy provision-from-quiz --no-verify-jwt
           supabase functions deploy create-checkout-session --no-verify-jwt
           supabase functions deploy create-billing-portal-session --no-verify-jwt
           supabase functions deploy create-test-user --no-verify-jwt

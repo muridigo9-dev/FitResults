@@ -20,6 +20,21 @@ verify_jwt = false
 [functions.stripe-webhook]
 verify_jwt = false
 
+# Administrative Stripe actions (save_keys / validate_key / get_price). These
+# used to ride inside stripe-webhook, which had to stay open for Stripe to
+# reach it — one endpoint cannot be both "public, signed by Stripe" and
+# "administrative, signed by a JWT". JWT-gated here, plus an `admin` role check.
+[functions.stripe-admin]
+verify_jwt = true
+
+# Machine-to-machine: the quiz funnel POSTs signed fulfillment orders here.
+# verify_jwt = false because the caller is a server with no Supabase session —
+# it authenticates with an HMAC over the raw body (x-moove-signature), verified
+# before the body is parsed. See docs/integration/quiz-app-junction.md in the
+# quiz repo.
+[functions.provision-from-quiz]
+verify_jwt = false
+
 [functions.create-checkout-session]
 verify_jwt = false
 

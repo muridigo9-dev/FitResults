@@ -10,6 +10,8 @@ const corsHeaders = {
 interface SendEmailRequest {
   to: string | string[];
   template_type?: string;
+  /** BCP-47 tag matching email_templates.locale ("es-ES", "pt-BR", "en-US"). */
+  locale?: string;
   subject?: string;
   html?: string;
   text?: string;
@@ -18,6 +20,9 @@ interface SendEmailRequest {
   user_id?: string;
   force_provider?: "resend" | "supabase"; // Override para testes
 }
+
+/** What every template row existed in before locales were introduced. */
+const DEFAULT_LOCALE = "pt-BR";
 
 interface ResendEmailResponse {
   id: string;
@@ -130,9 +135,10 @@ const handler = async (req: Request): Promise<Response> => {
     // Parse request body
     const body: SendEmailRequest = await req.json();
     const { 
-      to, 
-      template_type, 
-      subject, 
+      to,
+      template_type,
+      locale,
+      subject,
       html, 
       text, 
       variables = {}, 
@@ -202,12 +208,32 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Buscar template se especificado
     if (template_type) {
-      const { data: template, error: templateError } = await supabase
+      // Templates are keyed by (type, locale). Callers that don't care about
+      // language keep working unchanged: DEFAULT_LOCALE is what every existing
+      // row was backfilled to. The quiz funnel sells in Spanish, so its buyers
+      // get a template that was never going to be pt-BR.
+      const requestedLocale = locale || DEFAULT_LOCALE;
+      let { data: template, error: templateError } = await supabase
         .from("email_templates")
         .select("*")
         .eq("type", template_type)
+        .eq("locale", requestedLocale)
         .eq("is_active", true)
         .maybeSingle();
+
+      // A missing translation must not mean a missing email — falling back to
+      // the default locale sends the right message in the wrong language, which
+      // beats sending nothing at all.
+      if (!template && requestedLocale !== DEFAULT_LOCALE) {
+        console.warn(`Template ${template_type} not found for ${requestedLocale}, falling back to ${DEFAULT_LOCALE}`);
+        ({ data: template, error: templateError } = await supabase
+          .from("email_templates")
+          .select("*")
+          .eq("type", template_type)
+          .eq("locale", DEFAULT_LOCALE)
+          .eq("is_active", true)
+          .maybeSingle());
+      }
 
       if (!templateError && template) {
         templateId = template.id;

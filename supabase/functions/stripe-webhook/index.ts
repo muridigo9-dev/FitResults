@@ -3,16 +3,37 @@ import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, stripe-signature",
 };
 
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json", ...corsHeaders },
+  });
+
 /**
- * STRIPE WEBHOOK V9.0 - AUTO-PROVISIONING & FULL LIFECYCLE
- * Handles:
- * 1. Automatic user creation (Invite) for new customers
- * 2. Subscription updates (Upgrades/Downgrades)
- * 3. Cancellations
- * 4. Admin Helpers (validate_key)
+ * STRIPE WEBHOOK V10 — SIGNED, AND BLIND TO FUNNEL SALES
+ *
+ * Two things changed from V9:
+ *
+ * 1. The signature is verified. Before, this endpoint accepted any POST, which
+ *    meant anyone who knew the URL could hand it a `checkout.session.completed`
+ *    and provision themselves a paid account. The admin `action` branches that
+ *    used to share this function moved to `stripe-admin` (verify_jwt = true) —
+ *    an endpoint authenticated by a Stripe signature cannot also be an endpoint
+ *    authenticated by a JWT.
+ *
+ * 2. It returns early on sales that originated in the quiz funnel. One Stripe
+ *    account serves both quiz.moovebody.com and this app, so both webhooks see
+ *    every event. Without this the buyer gets provisioned twice by two paths —
+ *    a magic-link invite from here and a credentials email from
+ *    `provision-from-quiz` — and receives two contradictory emails. Funnel
+ *    sales are fulfilled through the signed contract instead; see
+ *    docs/integration/quiz-app-junction.md in the quiz repo. The event is still
+ *    logged to `stripe_events` first, so the sale stays auditable from this side.
+ *
+ * Handles: user creation, subscription updates, cancellations.
  */
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -22,148 +43,61 @@ Deno.serve(async (req) => {
   const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
   try {
-    const payload = await req.json();
+    // === SIGNATURE VERIFICATION ===
+    // Read the body as raw text: the signature is over the exact bytes Stripe
+    // sent, so `await req.json()` first would make it unverifiable.
+    const rawBody = await req.text();
+    const signature = req.headers.get("stripe-signature");
 
-    // === AUTH CHECK FOR ADMIN ACTIONS ===
-    if (payload.action) {
-      const authHeader = req.headers.get('Authorization');
-      if (!authHeader) {
-        return new Response(JSON.stringify({ error: "Unauthorized: Missing Authorization header" }), { status: 401, headers: corsHeaders });
-      }
-      const token = authHeader.replace('Bearer ', '');
-      const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
-
-      if (authError || !user) {
-        return new Response(JSON.stringify({ error: "Unauthorized: Invalid Token" }), { status: 401, headers: corsHeaders });
-      }
-
-      // Optional: Check for specific admin role/claim here if your app supports it
-      // const isSuperAdmin = user.app_metadata?.role === 'service_role' || user.app_metadata?.claims_admin === true;
+    if (!signature) {
+      console.warn("[REJECT] Requisição sem stripe-signature.");
+      return json({ error: "Missing stripe-signature header" }, 400);
     }
 
-    // === ADMIN ACTIONS ===
-    if (payload.action === 'save_keys') {
-      const { secret_key, webhook_secret, publishable_key, mode } = payload;
+    const { data: stripeSettings } = await supabaseAdmin
+      .from("stripe_settings")
+      .select("secret_key, webhook_secret")
+      .maybeSingle();
 
-      console.log("[CONFIG] Salvando chaves Stripe...", { mode });
+    const webhookSecret = stripeSettings?.webhook_secret || Deno.env.get("STRIPE_WEBHOOK_SECRET");
+    const secretKey = stripeSettings?.secret_key || Deno.env.get("STRIPE_SECRET_KEY");
 
-      // Verificar se já existe configuração
-      const { data: existing } = await supabaseAdmin
-        .from("stripe_settings")
-        .select("id")
-        .maybeSingle();
-
-      let error;
-
-      if (existing) {
-        const { error: updateError } = await supabaseAdmin
-          .from("stripe_settings")
-          .update({
-            secret_key,
-            webhook_secret,
-            publishable_key,
-            stripe_mode: mode,
-            is_connected: true,
-            updated_at: new Date().toISOString()
-          })
-          .eq("id", existing.id);
-        error = updateError;
-      } else {
-        const { error: insertError } = await supabaseAdmin
-          .from("stripe_settings")
-          .insert({
-            secret_key,
-            webhook_secret,
-            publishable_key,
-            stripe_mode: mode,
-            is_connected: true,
-            trial_days: 7,
-            trial_enabled: true
-          });
-        error = insertError;
-      }
-
-      if (error) {
-        console.error(`[CONFIG ERROR] ${error.message}`);
-        return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders });
-      }
-
-      return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
+    if (!webhookSecret || !secretKey) {
+      console.error("[CONFIG ERROR] Stripe não configurado: falta secret_key ou webhook_secret.");
+      // 500, not 200: Stripe should retry once configuration is fixed rather
+      // than treat a lost event as delivered.
+      return json({ error: "Stripe configuration not found" }, 500);
     }
 
-    if (payload.action === 'validate_key') {
-      const { secret_key } = payload;
-      if (!secret_key) {
-        return new Response(JSON.stringify({ valid: false, error: "Chave secreta não fornecida." }), { status: 200, headers: corsHeaders });
-      }
+    const stripe = new Stripe(secretKey, {
+      apiVersion: "2023-10-16",
+      httpClient: Stripe.createFetchHttpClient(),
+    });
 
-      console.log("[VALIDATE] Testando chave Stripe...");
-
-      try {
-        // Initialize Stripe inside try/catch to handle potential module/init errors
-        const stripe = new Stripe(secret_key, {
-          apiVersion: '2023-10-16',
-          httpClient: Stripe.createFetchHttpClient()
-        });
-
-        const list = await stripe.customers.list({ limit: 1 });
-        console.log("[VALIDATE] Chave válida!", list);
-        return new Response(JSON.stringify({ valid: true }), { status: 200, headers: corsHeaders });
-      } catch (stripeError: any) {
-        console.error(`[VALIDATE ERROR] ${stripeError.message}`, stripeError);
-        return new Response(JSON.stringify({ valid: false, error: stripeError.message || "Erro desconhecido ao validar." }), { status: 200, headers: corsHeaders });
-      }
-    }
-
-    if (payload.action === 'get_price') {
-      const { price_id } = payload;
-      if (!price_id) {
-        return new Response(JSON.stringify({ error: "Price ID is required." }), { status: 400, headers: corsHeaders });
-      }
-
-      console.log(`[GET_PRICE] Fetching details for: ${price_id}`);
-
-      // 1. Get Stripe Key from DB
-      const { data: dbSettings, error: settingsError } = await supabaseAdmin.from("stripe_settings").select("secret_key").maybeSingle();
-
-      if (settingsError || !dbSettings?.secret_key) {
-        console.error("[GET_PRICE] Error fetching stripe settings:", settingsError);
-        return new Response(JSON.stringify({ error: "Stripe configuration not found." }), { status: 500, headers: corsHeaders });
-      }
-
-      try {
-        const stripe = new Stripe(dbSettings.secret_key, {
-          apiVersion: '2023-10-16',
-          httpClient: Stripe.createFetchHttpClient()
-        });
-
-        const price = await stripe.prices.retrieve(price_id);
-
-        console.log(`[GET_PRICE] Found:`, price);
-
-        return new Response(JSON.stringify({
-          success: true,
-          data: {
-            unit_amount: price.unit_amount,
-            currency: price.currency,
-            recurring: price.recurring
-          }
-        }), { status: 200, headers: corsHeaders });
-
-      } catch (stripeError: any) {
-        console.error(`[GET_PRICE ERROR] ${stripeError.message}`, stripeError);
-        return new Response(JSON.stringify({ error: stripeError.message || "Failed to fetch price from Stripe." }), { status: 400, headers: corsHeaders });
-      }
+    let payload: Stripe.Event;
+    try {
+      // Async + SubtleCryptoProvider: Deno has no synchronous HMAC, so the
+      // sync `constructEvent` throws here.
+      payload = await stripe.webhooks.constructEventAsync(
+        rawBody,
+        signature,
+        webhookSecret,
+        undefined,
+        Stripe.createSubtleCryptoProvider(),
+      );
+    } catch (verifyError: any) {
+      console.warn(`[REJECT] Assinatura inválida: ${verifyError.message}`);
+      return json({ error: "Invalid signature" }, 400);
     }
 
     // === WEBHOOK EVENTS ===
     const eventType = payload.type;
-    const session = payload.data?.object;
+    const session = payload.data?.object as any;
     const stripeEventId = payload.id;
 
     if (!eventType || !session) {
       console.warn("[SKIP] Payload inválido ou desconhecido.");
-      return new Response(JSON.stringify({ received: true, warning: "Unknown payload" }), { status: 200, headers: corsHeaders });
+      return json({ received: true, warning: "Unknown payload" });
     }
 
     console.log(`[STRIPE WEBHOOK] Evento: ${eventType}`);
@@ -175,12 +109,28 @@ Deno.serve(async (req) => {
         stripe_event_id: stripeEventId,
         event_type: eventType,
         payload: payload,
-        processed: false
+        processed: false,
       })
       .select()
       .maybeSingle();
 
     if (logError) console.error("[LOG ERROR]", logError);
+
+    // === QUIZ-ORIGIN GUARD ===
+    // Checked after logging so the sale is auditable here, and before any
+    // provisioning so it never happens twice. `metadata.source` is stamped by
+    // the funnel on both the Checkout Session and the subscription, so
+    // `customer.subscription.*` events carry it too.
+    if (session.metadata?.source === "quiz" || session.metadata?.quizSlug) {
+      console.log("[SKIP] venda originada no funil — provisionada via provision-from-quiz");
+      if (eventLog) {
+        await supabaseAdmin
+          .from("stripe_events")
+          .update({ processed: true, error_message: "Skipped: quiz-origin sale" })
+          .eq("id", eventLog.id);
+      }
+      return json({ received: true, skipped: "quiz-origin" });
+    }
 
     // 1. Coletar dados básicos do evento
     let email = (
@@ -209,7 +159,7 @@ Deno.serve(async (req) => {
       if (eventLog) {
         await supabaseAdmin.from("stripe_events").update({ error_message: "Email not found" }).eq("id", eventLog.id);
       }
-      return new Response(JSON.stringify({ ok: true, skipped: true }), { status: 200, headers: corsHeaders });
+      return json({ ok: true, skipped: true });
     }
 
     // 2. Processar de acordo com o tipo de evento
@@ -222,7 +172,8 @@ Deno.serve(async (req) => {
       // PASSO A: Garantir que o usuário EXISTE no Auth do Supabase
       // Buscamos o usuário pelo email
       const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers();
-      let user = users.find(u => u.email?.toLowerCase() === email);
+      if (listError) console.error("[LIST USERS ERROR]", listError);
+      let user = users?.find((u) => u.email?.toLowerCase() === email);
 
       if (!user && eventType === "checkout.session.completed") {
         console.log(`[PROVISIONING] Criando nova conta para o lead: ${email}`);
@@ -304,11 +255,10 @@ Deno.serve(async (req) => {
       }
     }
 
-    return new Response(JSON.stringify({ received: true }), { status: 200, headers: corsHeaders });
+    return json({ received: true });
 
   } catch (error: any) {
     console.error(`[FATAL WEBHOOK ERROR] ${error.message}`);
-    // Tenta logar o erro fatal se possível, mas pode não ter eventLog id aqui se falhou antes
-    return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders });
+    return json({ error: error.message }, 500);
   }
 });

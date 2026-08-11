@@ -67,7 +67,7 @@ export function StripeConfigCard({
     setIsValidating(true);
     try {
       // Call edge function to validate the key
-      const { data, error } = await supabase.functions.invoke("stripe-webhook", {
+      const { data, error } = await supabase.functions.invoke("stripe-admin", {
         body: {
           action: "validate_key",
           secret_key: secretKey,
@@ -109,7 +109,7 @@ export function StripeConfigCard({
 
     setIsSaving(true);
     try {
-      const { data, error } = await supabase.functions.invoke("stripe-webhook", {
+      const { data, error } = await supabase.functions.invoke("stripe-admin", {
         body: {
           action: "save_keys",
           secret_key: secretKey,

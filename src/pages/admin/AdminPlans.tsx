@@ -162,7 +162,7 @@ export default function AdminPlans() {
 
     setSyncingPriceIndex(index);
     try {
-      const { data, error } = await supabase.functions.invoke('stripe-webhook', {
+      const { data, error } = await supabase.functions.invoke('stripe-admin', {
         body: { action: 'get_price', price_id: priceId }
       });
 
@@ -179,7 +179,7 @@ export default function AdminPlans() {
 
       if (!responseData?.success) {
         if (responseData?.warning === "Unknown payload") {
-          throw new Error("Função desatualizada. Por favor, faça o deploy do 'stripe-webhook'.");
+          throw new Error("Função desatualizada. Por favor, faça o deploy do 'stripe-admin'.");
         }
         throw new Error(responseData?.error || "Erro ao sincronizar preço.");
       }

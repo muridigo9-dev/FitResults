@@ -13,7 +13,7 @@ import { useExerciseHistory } from "@/hooks/useExerciseHistory";
 import { useLastExerciseLog } from "@/hooks/useWorkoutSession";
 import type { SessionExercise, ExerciseFeedbackMood, LikeDislike } from "@/types/workout";
 import { EQUIPMENT_LABELS, DIFFICULTY_LABELS } from "@/types/workout";
-import { resolveImageUrl } from "@/hooks/useStorageUpload";
+import { ExerciseMedia } from "@/components/exercise/ExerciseMedia";
 
 interface WorkoutExecutionCardProps {
   sessionExercise: SessionExercise;
@@ -230,7 +230,7 @@ export function WorkoutExecutionCard({
 
           {/* Instructions */}
           {/* Instructions & Media */}
-          {(exercise.instructions || exercise.videoUrl || exercise.gifUrl || exercise.imageUrl) && (
+          {(exercise.instructions || exercise.videoUrl || exercise.gifUrl || exercise.imageUrl || exercise.imagePath) && (
             <div>
               <div className="flex items-center justify-between gap-2">
                 <Button
@@ -263,7 +263,7 @@ export function WorkoutExecutionCard({
               {showInstructions && (
                 <div className="mt-2 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
                   {/* Media */}
-                  {(exercise.videoUrl || exercise.gifUrl || exercise.imageUrl) && (
+                  {(exercise.videoUrl || exercise.gifUrl || exercise.imageUrl || exercise.imagePath) && (
                     <div className="relative aspect-video sm:aspect-auto sm:h-[400px] w-full rounded-lg overflow-hidden bg-muted shadow-sm border mx-auto">
                       {exercise.videoUrl ? (
                         <video
@@ -273,9 +273,10 @@ export function WorkoutExecutionCard({
                           poster={exercise.imageUrl || exercise.thumbnailUrl}
                         />
                       ) : (
-                        <img
-                          src={exercise.gifUrl || resolveImageUrl('exercises-media', exercise.imagePath, exercise.imageUrl)}
-                          alt={exercise.name}
+                        <ExerciseMedia
+                          exercise={exercise}
+                          isActive
+                          loading="eager"
                           className="w-full h-full object-contain bg-background"
                         />
                       )}

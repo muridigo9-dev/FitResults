@@ -16,7 +16,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Carousel, CarouselContent, CarouselItem, CarouselApi } from "@/components/ui/carousel";
 import { useFeatureFlag } from "@/contexts/FeatureFlagsContext";
 import { useI18n } from "@/hooks/useI18n";
-import { resolveImageUrl } from "@/hooks/useStorageUpload";
+import { ExerciseMedia } from "@/components/exercise/ExerciseMedia";
 import {
   Dialog,
   DialogContent,
@@ -254,9 +254,8 @@ export default function WorkoutDetail() {
                         isCurrent ? "border-primary scale-110 shadow-md z-10" : "border-transparent opacity-60 hover:opacity-100 grayscale"
                       )}
                     >
-                      <img
-                        src={resolveImageUrl('exercises-media', ex.imagePath, ex.imageUrl)}
-                        alt=""
+                      <ExerciseMedia
+                        exercise={ex}
                         className="w-full h-full object-cover"
                       />
                       {isCurrent && (
@@ -294,10 +293,15 @@ export default function WorkoutDetail() {
 
                     {/* Media */}
                     <div className="aspect-video w-full max-h-[45vh] lg:max-h-[50vh] rounded-2xl overflow-hidden bg-muted relative mb-4 shadow-sm border border-border/50 shrink-0">
-                      <img
-                        src={resolveImageUrl('exercises-media', exercise.imagePath, exercise.imageUrl)}
-                        alt={exercise.name}
+                      <ExerciseMedia
+                        exercise={exercise}
+                        isActive={index === currentSlideIndex}
                         className="w-full h-full object-cover"
+                        fallback={
+                          <div className="w-full h-full flex items-center justify-center bg-muted">
+                            <Dumbbell className="h-8 w-8 text-muted-foreground/30" />
+                          </div>
+                        }
                       />
                       {/* Overlay Info */}
                       <div className="absolute bottom-3 right-3 bg-black/60 backdrop-blur-md text-white text-xs px-3 py-1.5 rounded-full font-medium">
@@ -334,9 +338,10 @@ export default function WorkoutDetail() {
                                   poster={exercise.imageUrl}
                                 />
                               ) : (
-                                <img
-                                  src={exercise.gifUrl || resolveImageUrl('exercises-media', exercise.imagePath, exercise.imageUrl)}
-                                  alt={exercise.name}
+                                <ExerciseMedia
+                                  exercise={exercise}
+                                  isActive
+                                  loading="eager"
                                   className="w-full h-full object-contain"
                                 />
                               )}

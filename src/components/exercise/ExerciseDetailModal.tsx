@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { ExerciseDetailView } from "./ExerciseDetailView";
-import { resolveImageUrl } from "@/hooks/useStorageUpload";
+import { ExerciseMedia } from "./ExerciseMedia";
 import type { Exercise } from "@/types/content";
 import { Button } from "@/components/ui/button";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
@@ -88,11 +88,9 @@ export function ExerciseDetailModal({
                                                 : "border-transparent opacity-40 hover:opacity-100"
                                         )}
                                     >
-                                        <img
-                                            src={ex.gifUrl || resolveImageUrl('exercises-media', ex.imagePath, ex.imageUrl)}
+                                        <ExerciseMedia
+                                            exercise={ex}
                                             className="h-full w-full object-cover"
-                                            alt=""
-                                            onError={(e) => { (e.target as HTMLImageElement).src = "/placeholder.svg" }}
                                         />
                                         {idx === currentIndex && (
                                             <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">

@@ -2,6 +2,7 @@ import { Play, CheckCircle2, Dumbbell, Signal, SignalHigh, SignalMedium, SignalL
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { ExerciseMedia } from "./ExerciseMedia";
 import type { Exercise } from "@/types/content";
 
 interface StudentExerciseCardProps {
@@ -43,11 +44,14 @@ export function StudentExerciseCard({ exercise, onClick, isDone }: StudentExerci
         >
             {/* Image/Video Background */}
             <div className="absolute inset-0 bg-background/80">
-                <img
-                    src={exercise.imageUrl || exercise.imagePath || "/placeholder-exercise.jpg"}
-                    alt={exercise.name}
+                <ExerciseMedia
+                    exercise={exercise}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                    loading="lazy"
+                    fallback={
+                        <div className="w-full h-full flex items-center justify-center bg-muted">
+                            <Dumbbell className="h-8 w-8 text-muted-foreground/30" />
+                        </div>
+                    }
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-80 group-hover:opacity-90 transition-opacity duration-300" />
             </div>

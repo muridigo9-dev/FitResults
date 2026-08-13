@@ -625,11 +625,55 @@
   letter-spacing: 0;
 }
 
+.lp-plan-promo {
+  display: inline-block;
+  margin-top: 12px;
+  background: var(--lp-brand-soft);
+  color: var(--lp-brand-dark);
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 5px 11px;
+  border-radius: var(--lp-pill);
+}
+
+/* Placeholder while plan_prices loads, so the section keeps its height. */
+.lp-plan-skeleton {
+  min-height: 190px;
+  border-radius: var(--lp-radius);
+  border: 2px solid var(--lp-border-soft);
+  background: linear-gradient(100deg, #f2f6f4 30%, #e9f0ed 50%, #f2f6f4 70%);
+  background-size: 220% 100%;
+  animation: lp-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes lp-shimmer {
+  from { background-position: 180% 0; }
+  to { background-position: -60% 0; }
+}
+
+.lp-plans-empty {
+  margin: 0;
+  padding: 40px 24px;
+  text-align: center;
+  font-size: 0.98rem;
+  color: var(--lp-ink-2);
+  background: var(--lp-card);
+  border: 1px dashed var(--lp-border);
+  border-radius: var(--lp-radius);
+}
+
 .lp-plans-note {
   margin: 26px 0 0;
   text-align: center;
   font-size: 0.92rem;
   color: var(--lp-ink-2);
+}
+
+.lp-plans-legal {
+  margin: 12px 0 0;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--lp-muted);
 }
 
 .lp-plans-terms {

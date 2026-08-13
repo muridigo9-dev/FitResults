@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Dumbbell,
   Check,
@@ -22,6 +25,7 @@ import {
 } from "lucide-react";
 import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
 import { useGlobalBranding } from "@/hooks/useBranding";
+import { useI18n } from "@/hooks/useI18n";
 import "./LandingPage.css";
 
 /**
@@ -29,143 +33,154 @@ import "./LandingPage.css";
  *
  * Kept in one place on purpose: these are public claims about the product, so
  * they need to match reality before the page goes in front of buyers. Set
- * `show: false` to drop the whole rating row until there are real numbers to
- * put here.
+ * `show: false` to drop the whole rating row until there are real numbers.
  */
 const SOCIAL_PROOF = {
   show: true,
   score: "4,6 / 5",
-  count: "+2.300 avaliações verificadas",
+  count: "+2.300",
 };
 
-// ===== DATA =====
-const plans = [
-  {
-    name: "Plano Mensal",
-    renew: "Renova automaticamente em R$ 29,90 a cada mês, até você cancelar.",
-    price: "R$ 29,90",
-    period: "/mês",
-    popular: false,
-  },
-  {
-    name: "Plano Trimestral",
-    renew: "Renova automaticamente em R$ 79,90 a cada 3 meses, até você cancelar.",
-    price: "R$ 79,90",
-    period: "/trimestre",
-    popular: true,
-  },
-  {
-    name: "Plano Anual",
-    renew: "Renova automaticamente em R$ 239,90 a cada 12 meses, até você cancelar.",
-    price: "R$ 239,90",
-    period: "/ano",
-    popular: false,
-  },
+const STREAK_DAYS = 12;
+
+/** Icons for the "what's included" list; the copy itself comes from i18n. */
+const includedIcons = [
+  CalendarCheck, Dumbbell, Utensils, Trophy, TrendingUp,
+  Bell, Smartphone, Shield, Zap, CreditCard,
 ];
 
-const steps = [
-  {
-    num: "1",
-    title: "Escolha seu plano",
-    desc: "Mensal, trimestral ou anual. O preço de entrada e o de renovação aparecem lado a lado — o que você vê é exatamente o que paga.",
-  },
-  {
-    num: "2",
-    title: "Revise e confirme",
-    desc: "Antes do checkout você recebe um resumo: o total de hoje, o valor da renovação e o período. Nada é cobrado até você confirmar.",
-  },
-  {
-    num: "3",
-    title: "Comece — ajuste quando quiser",
-    desc: "Registre treinos, refeições e hábitos todo dia. Pause, troque de plano ou cancele quando quiser, direto nas configurações.",
-  },
-];
+type LandingPrice = {
+  priceId: string;
+  name: string;
+  interval: string;
+  amount: number;
+  currency: string;
+  promo: string | null;
+  popular: boolean;
+};
 
-const included = [
-  { icon: CalendarCheck, text: "Check-in diário: água, sono, treino e refeições" },
-  { icon: Dumbbell, text: "Treinos guiados e biblioteca de exercícios" },
-  { icon: Utensils, text: "Planos alimentares e contagem de macros" },
-  { icon: Trophy, text: "Gamificação com XP, níveis e conquistas" },
-  { icon: TrendingUp, text: "Gráficos de progresso e métricas de evolução" },
-  { icon: Bell, text: "Lembretes suaves — desative quando quiser" },
-  { icon: Smartphone, text: "Instale no celular como app (PWA)" },
-  { icon: Shield, text: "Garantia de 7 dias no seu primeiro pedido" },
-  { icon: Zap, text: "Cancele nas configurações — sem ligações, sem formulários" },
-  { icon: CreditCard, text: "Preço integral exibido antes de cada cobrança" },
-];
+type PlanRow = { id: string; name: string; is_default: boolean | null };
 
-const testimonials = [
-  {
-    initials: "MC",
-    name: "Mariana Costa",
-    role: "Usuária verificada",
-    text: "Finalmente um lugar para registrar tudo — treino, água e refeições em um só app. <strong>Muito motivador!</strong> Já recomendei para as minhas amigas.",
-  },
-  {
-    initials: "JR",
-    name: "João Ribeiro",
-    role: "Usuário verificado",
-    text: "O check-in diário me trouxe uma constância que eu nunca tive. <strong>Três meses seguidos</strong> sem perder o ritmo. O melhor investimento da minha rotina.",
-  },
-  {
-    initials: "AS",
-    name: "Aline Santos",
-    role: "Usuária verificada",
-    text: "Consegui cancelar e receber meu reembolso rapidinho, com atendimento muito atencioso. Mas logo voltei, porque <strong>sinto falta do app</strong>.",
-  },
-];
+type PlanPriceRow = {
+  plan_id: string;
+  price_id: string;
+  interval: string | null;
+  label: string | null;
+  display_price: number | string | null;
+  display_currency: string | null;
+  promo_text: string | null;
+};
 
-const faqs = [
-  {
-    q: "Como funciona a cobrança?",
-    a: "No dia da compra você paga o preço de entrada do plano escolhido. A menos que você cancele, o plano renova automaticamente pelo preço de renovação indicado no plano (mais os impostos aplicáveis) ao final de cada período. O valor e a data de renovação sempre aparecem antes de você confirmar o pedido.",
-  },
-  {
-    q: "Como eu cancelo?",
-    a: "Você pode cancelar quando quiser, direto das configurações da sua conta — sem ligações e sem formulários. Ao cancelar, o acesso continua até o fim do período já pago.",
-  },
-  {
-    q: "Qual é a política de reembolso?",
-    a: "Oferecemos garantia incondicional de 7 dias no seu primeiro pedido. Se não gostar, é só solicitar o reembolso e devolvemos seu dinheiro. Consulte a política de assinatura e reembolso para mais detalhes.",
-  },
-  {
-    q: "Preciso pagar para começar?",
-    a: "Você cria sua conta gratuitamente e só decide pelo plano quando estiver pronto. Nenhum valor é cobrado sem a sua confirmação explícita.",
-  },
-  {
-    q: "O app funciona no meu celular?",
-    a: "Sim! O app é um PWA (Progressive Web App) e pode ser instalado direto no seu celular, como um app nativo — em Android, iOS e também no computador.",
-  },
-  {
-    q: "É adequado para o meu nível de condicionamento?",
-    a: "Sim. Você define seus objetivos, nível atual e preferências durante o cadastro, e a experiência se adapta a você. Oferecemos informações gerais sobre fitness e nutrição e não substituímos aconselhamento médico — consulte seu médico antes de iniciar qualquer programa.",
-  },
-];
+/**
+ * `plans` and `plan_prices` are not in the generated Database types yet, so the
+ * client is widened here instead of sprinkling `any` at every call site. The
+ * rows are given explicit shapes above so the mapping below stays checked.
+ */
+const db = supabase as unknown as SupabaseClient;
 
-/** The daily check-in rows drawn in the hero preview card. */
-const heroPreview = [
-  { icon: Droplets, label: "Água", value: "1,8 L", pct: 72 },
-  { icon: Moon, label: "Sono", value: "7 h 20", pct: 88 },
-  { icon: Dumbbell, label: "Treino", value: "Concluído", pct: 100 },
-  { icon: Utensils, label: "Refeições", value: "3 de 4", pct: 75 },
-];
+/**
+ * Billing options shown on the pricing section.
+ *
+ * Reads `plans` + `plan_prices`, the same pair Checkout reads, so the page can
+ * never advertise a price the checkout would not charge. Checkout collapses
+ * each plan to a single price because it lists one card per plan; here we want
+ * one card per billing period, so every active price of every paid plan is
+ * listed instead.
+ */
+function useLandingPrices() {
+  return useQuery({
+    queryKey: ["landing-prices"],
+    staleTime: 5 * 60 * 1000,
+    queryFn: async (): Promise<LandingPrice[]> => {
+      const [{ data: plansData }, { data: pricesData }] = await Promise.all([
+        db.from("plans").select("*").eq("is_active", true).order("display_order"),
+        db.from("plan_prices").select("*").eq("is_active", true),
+      ]);
 
-// ===== COMPONENT =====
+      const plans = (plansData ?? []) as PlanRow[];
+      const prices = (pricesData ?? []) as PlanPriceRow[];
+
+      // `is_default` marks the free tier - it has nothing to sell here.
+      const paid = plans.filter(p => !p.is_default);
+
+      const rows: LandingPrice[] = [];
+      for (const plan of paid) {
+        for (const price of prices.filter(p => p.plan_id === plan.id)) {
+          rows.push({
+            priceId: price.price_id,
+            name: price.label || plan.name,
+            interval: String(price.interval || "month"),
+            amount: Number(price.display_price),
+            currency: price.display_currency || "USD",
+            promo: price.promo_text ?? null,
+            popular: false,
+          });
+        }
+      }
+
+      rows.sort((a, b) => a.amount - b.amount);
+      // Middle option carries the badge, which is where the eye lands first.
+      if (rows.length === 3) rows[1].popular = true;
+      return rows;
+    },
+  });
+}
+
 export default function LandingPage() {
   const { branding } = useGlobalBranding();
-  const [selectedPlan, setSelectedPlan] = useState(1);
+  const { t, language } = useI18n();
+  const { data: prices = [], isLoading: pricesLoading } = useLandingPrices();
+  const [selected, setSelected] = useState(0);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   const appName = branding.appName || "MooveBody";
+  const locale = language || "pt-BR";
+
+  const money = (amount: number, currency: string) =>
+    new Intl.NumberFormat(locale, { style: "currency", currency }).format(amount);
+
+  /** "/month", "/3 months", "/year" for the price suffix. */
+  const periodLabel = (interval: string) => {
+    if (interval === "year" || interval === "annual") return t("landing.plans.perYear");
+    if (interval === "quarter" || interval === "quarterly") return t("landing.plans.perMonths", { count: 3 });
+    if (interval === "semester" || interval === "semiannual") return t("landing.plans.perMonths", { count: 6 });
+    return t("landing.plans.perMonth");
+  };
+
+  /** Renewal sentence shown under the plan name. */
+  const renewLabel = (price: LandingPrice) => {
+    const formatted = money(price.amount, price.currency);
+    if (price.interval === "year" || price.interval === "annual") {
+      return t("landing.plans.renewYear", { price: formatted });
+    }
+    if (price.interval === "quarter" || price.interval === "quarterly") {
+      return t("landing.plans.renewMonths", { price: formatted, count: 3 });
+    }
+    if (price.interval === "semester" || price.interval === "semiannual") {
+      return t("landing.plans.renewMonths", { price: formatted, count: 6 });
+    }
+    return t("landing.plans.renewMonth", { price: formatted });
+  };
+
+  const steps: Array<{ title: string; desc: string }> = t("landing.how.steps") || [];
+  const includedItems: string[] = t("landing.included.items") || [];
+  const members: Array<{ initials: string; name: string; role: string; text: string }> =
+    t("landing.members.items") || [];
+  const faqs: Array<{ q: string; a: string }> = t("landing.faq.items") || [];
+
+  const heroRows = [
+    { icon: Droplets, label: t("landing.preview.water"), value: "1,8 L", pct: 72 },
+    { icon: Moon, label: t("landing.preview.sleep"), value: "7 h 20", pct: 88 },
+    { icon: Dumbbell, label: t("landing.preview.workout"), value: t("landing.preview.workoutDone"), pct: 100 },
+    { icon: Utensils, label: t("landing.preview.meals"), value: "3 / 4", pct: 75 },
+  ];
+
+  const current = prices[selected];
 
   const logoMark = branding.logoUrl ? (
-    <span className="lp-logo-mark">
-      <img src={branding.logoUrl} alt={appName} />
-    </span>
+    <span className="lp-logo-mark"><img src={branding.logoUrl} alt={appName} /></span>
   ) : (
-    <span className="lp-logo-mark">
-      <Dumbbell size={18} />
-    </span>
+    <span className="lp-logo-mark"><Dumbbell size={18} /></span>
   );
 
   return (
@@ -179,17 +194,15 @@ export default function LandingPage() {
           </Link>
 
           <nav className="lp-nav">
-            <a className="lp-nav-link" href="#como-funciona">Como funciona</a>
-            <a className="lp-nav-link" href="#incluso">O que está incluso</a>
-            <a className="lp-nav-link" href="#faq">FAQ</a>
+            <a className="lp-nav-link" href="#como-funciona">{t("landing.nav.how")}</a>
+            <a className="lp-nav-link" href="#incluso">{t("landing.nav.included")}</a>
+            <a className="lp-nav-link" href="#faq">{t("landing.nav.faq")}</a>
           </nav>
 
           <div className="lp-header-right">
             <LanguageSwitcher showLabel={false} />
-            <Link to="/auth" className="lp-btn lp-btn-ghost">Entrar</Link>
-            <Link to="/checkout" className="lp-btn lp-btn-dark">
-              Ver planos e preços
-            </Link>
+            <Link to="/auth" className="lp-btn lp-btn-ghost">{t("landing.nav.login")}</Link>
+            <Link to="/checkout" className="lp-btn lp-btn-dark">{t("landing.nav.plans")}</Link>
           </div>
         </div>
       </header>
@@ -199,38 +212,31 @@ export default function LandingPage() {
         <div className="lp-container lp-hero-inner">
           <div className="lp-hero-copy">
             <h1>
-              Treine com constância — <span>no seu ritmo</span>
+              {t("landing.hero.title")} <span>{t("landing.hero.accent")}</span>
             </h1>
-            <p className="lp-hero-desc">
-              Treinos guiados, orientação nutricional e check-in diário reunidos em
-              um só lugar. Todo preço aparece antes de você pagar — sem renovação
-              escondida, sem surpresa na letra miúda.
-            </p>
+            <p className="lp-hero-desc">{t("landing.hero.desc")}</p>
             <div className="lp-hero-ctas">
               <Link to="/checkout" className="lp-btn lp-btn-dark lp-btn-lg">
-                Ver planos
+                {t("landing.hero.ctaPlans")}
               </Link>
               <a href="#como-funciona" className="lp-btn lp-btn-outline lp-btn-lg">
-                Como funciona
+                {t("landing.hero.ctaHow")}
               </a>
             </div>
-            <p className="lp-hero-note">
-              Planos a partir de um mês. Cancele quando quiser.
-            </p>
+            <p className="lp-hero-note">{t("landing.hero.note")}</p>
           </div>
 
           {/* Product preview, drawn rather than photographed: there is no
-              photography in the project yet, and a real screenshot beats a
-              stock photo for a tracking app anyway. */}
+              photography in the project yet. */}
           <div className="lp-hero-visual" aria-hidden="true">
             <div className="lp-preview">
               <div className="lp-preview-head">
-                <span className="lp-preview-title">Hoje</span>
+                <span className="lp-preview-title">{t("landing.preview.today")}</span>
                 <span className="lp-preview-streak">
-                  <Zap size={13} /> 12 dias seguidos
+                  <Zap size={13} /> {t("landing.preview.streak", { days: STREAK_DAYS })}
                 </span>
               </div>
-              {heroPreview.map((row, i) => {
+              {heroRows.map((row, i) => {
                 const Icon = row.icon;
                 return (
                   <div key={i} className="lp-preview-row">
@@ -248,7 +254,7 @@ export default function LandingPage() {
                 );
               })}
               <div className="lp-preview-foot">
-                <Check size={14} /> Check-in do dia concluído
+                <Check size={14} /> {t("landing.preview.done")}
               </div>
             </div>
           </div>
@@ -258,18 +264,13 @@ export default function LandingPage() {
       {/* ===== HOW IT WORKS ===== */}
       <section className="lp-section" id="como-funciona">
         <div className="lp-container">
-          <p className="lp-eyebrow">Como funciona</p>
-          <h2 className="lp-section-title">
-            Três passos simples — você no controle o tempo todo
-          </h2>
-          <p className="lp-section-subtitle">
-            Você vê e confirma o plano completo antes de qualquer pagamento. Nada é
-            cobrado até você dizer sim.
-          </p>
+          <p className="lp-eyebrow">{t("landing.how.eyebrow")}</p>
+          <h2 className="lp-section-title">{t("landing.how.title")}</h2>
+          <p className="lp-section-subtitle">{t("landing.how.subtitle")}</p>
           <div className="lp-steps-grid">
             {steps.map((step, i) => (
               <div key={i} className="lp-step">
-                <div className="lp-step-num">Passo {step.num}</div>
+                <div className="lp-step-num">{t("landing.how.stepLabel", { n: i + 1 })}</div>
                 <h3>{step.title}</h3>
                 <p>{step.desc}</p>
               </div>
@@ -281,24 +282,19 @@ export default function LandingPage() {
       {/* ===== INCLUDED ===== */}
       <section className="lp-section lp-section-alt" id="incluso">
         <div className="lp-container">
-          <p className="lp-eyebrow">O que está incluso</p>
-          <h2 className="lp-section-title">
-            Um plano completo — a única escolha é por quanto tempo
-          </h2>
-          <p className="lp-section-subtitle">
-            Todos os planos incluem a experiência completa do {appName}. O período de
-            cobrança é a única coisa que muda.
-          </p>
+          <p className="lp-eyebrow">{t("landing.included.eyebrow")}</p>
+          <h2 className="lp-section-title">{t("landing.included.title")}</h2>
+          <p className="lp-section-subtitle">{t("landing.included.subtitle", { appName })}</p>
           <div className="lp-included-panel">
             <div className="lp-included-grid">
-              {included.map((item, i) => {
-                const Icon = item.icon;
+              {includedItems.map((text, i) => {
+                const Icon = includedIcons[i] || Check;
                 return (
                   <div key={i} className="lp-included-item">
                     <span className="lp-included-check"><Check size={13} strokeWidth={3} /></span>
                     <span className="lp-included-text">
                       <Icon size={15} className="lp-included-icon" />
-                      {item.text}
+                      {text}
                     </span>
                   </div>
                 );
@@ -308,13 +304,11 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ===== TESTIMONIALS ===== */}
+      {/* ===== MEMBERS ===== */}
       <section className="lp-section" id="depoimentos">
         <div className="lp-container">
-          <p className="lp-eyebrow">Dos nossos membros</p>
-          <h2 className="lp-section-title">
-            A confiança de quem queria um começo mais simples
-          </h2>
+          <p className="lp-eyebrow">{t("landing.members.eyebrow")}</p>
+          <h2 className="lp-section-title">{t("landing.members.title")}</h2>
 
           {SOCIAL_PROOF.show && (
             <div className="lp-rating-row">
@@ -329,96 +323,98 @@ export default function LandingPage() {
           )}
 
           <div className="lp-testimonials-grid">
-            {testimonials.map((t, i) => (
+            {members.map((m, i) => (
               <div key={i} className="lp-testimonial-card">
                 <div className="lp-stars">
                   {[...Array(5)].map((_, j) => (
                     <Star key={j} size={15} fill="var(--lp-star)" color="var(--lp-star)" />
                   ))}
                 </div>
-                <p className="lp-testimonial-text" dangerouslySetInnerHTML={{ __html: t.text }} />
+                <p className="lp-testimonial-text">{m.text}</p>
                 <div className="lp-testimonial-footer">
-                  <div className="lp-testimonial-avatar">{t.initials}</div>
+                  <div className="lp-testimonial-avatar">{m.initials}</div>
                   <div>
-                    <div className="lp-testimonial-name">{t.name}</div>
-                    <div className="lp-testimonial-role">
-                      <Check size={12} /> {t.role}
-                    </div>
+                    <div className="lp-testimonial-name">{m.name}</div>
+                    <div className="lp-testimonial-role"><Check size={12} /> {m.role}</div>
                   </div>
                 </div>
               </div>
             ))}
           </div>
 
-          <p className="lp-fineprint">
-            As avaliações refletem experiências e pontos de vista individuais dos
-            membros; os resultados variam e não são garantidos. As avaliações são de
-            compradores verificados e não são incentivadas. O {appName} não oferece
-            aconselhamento médico — consulte seu médico antes de iniciar qualquer
-            programa de exercícios ou nutrição.
-          </p>
+          <p className="lp-fineprint">{t("landing.members.fineprint", { appName })}</p>
         </div>
       </section>
 
       {/* ===== PLANS ===== */}
       <section className="lp-section lp-section-alt" id="planos">
         <div className="lp-container">
-          <p className="lp-eyebrow">Planos e preços</p>
-          <h2 className="lp-section-title">Preço completo, nada escondido</h2>
-          <p className="lp-section-subtitle">
-            Cada plano mostra o preço de entrada e o de renovação juntos. Você revisa
-            e confirma tudo antes de pagar.
-          </p>
+          <p className="lp-eyebrow">{t("landing.plans.eyebrow")}</p>
+          <h2 className="lp-section-title">{t("landing.plans.title")}</h2>
+          <p className="lp-section-subtitle">{t("landing.plans.subtitle")}</p>
 
-          <div className="lp-plans-grid">
-            {plans.map((plan, i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={() => setSelectedPlan(i)}
-                aria-pressed={selectedPlan === i}
-                className={`lp-plan-card ${selectedPlan === i ? "selected" : ""} ${plan.popular ? "has-popular" : ""}`}
-              >
-                {plan.popular && <span className="lp-plan-ribbon">Mais popular</span>}
-                <span className="lp-plan-inner">
-                  <span className="lp-plan-radio-row">
-                    <span className="lp-plan-radio">
-                      {selectedPlan === i && <span className="lp-plan-radio-dot" />}
+          {pricesLoading ? (
+            <div className="lp-plans-grid">
+              {[0, 1, 2].map(i => <div key={i} className="lp-plan-skeleton" />)}
+            </div>
+          ) : prices.length === 0 ? (
+            <p className="lp-plans-empty">{t("landing.plans.empty")}</p>
+          ) : (
+            <>
+              <div className="lp-plans-grid">
+                {prices.map((price, i) => (
+                  <button
+                    key={price.priceId}
+                    type="button"
+                    onClick={() => setSelected(i)}
+                    aria-pressed={selected === i}
+                    className={`lp-plan-card ${selected === i ? "selected" : ""} ${price.popular ? "has-popular" : ""}`}
+                  >
+                    {price.popular && (
+                      <span className="lp-plan-ribbon">{t("landing.plans.popular")}</span>
+                    )}
+                    <span className="lp-plan-inner">
+                      <span className="lp-plan-radio-row">
+                        <span className="lp-plan-radio">
+                          {selected === i && <span className="lp-plan-radio-dot" />}
+                        </span>
+                        <span className="lp-plan-name">{price.name}</span>
+                      </span>
+                      <span className="lp-plan-renew">{renewLabel(price)}</span>
+                      <span className="lp-plan-price">
+                        {money(price.amount, price.currency)}{" "}
+                        <span>{periodLabel(price.interval)}</span>
+                      </span>
+                      {price.promo && <span className="lp-plan-promo">{price.promo}</span>}
                     </span>
-                    <span className="lp-plan-name">{plan.name}</span>
-                  </span>
-                  <span className="lp-plan-renew">{plan.renew}</span>
-                  <span className="lp-plan-price">
-                    {plan.price} <span>{plan.period}</span>
-                  </span>
-                </span>
-              </button>
-            ))}
-          </div>
+                  </button>
+                ))}
+              </div>
 
-          <p className="lp-plans-note">
-            Nenhum pagamento nesta etapa — você revisa e confirma seu pedido no passo
-            seguinte.
-          </p>
+              <p className="lp-plans-note">{t("landing.plans.note")}</p>
 
-          <p className="lp-plans-terms">
-            Você será cobrado em {plans[selectedPlan].price} hoje. A menos que
-            cancele, sua assinatura renova automaticamente pelo preço de renovação
-            indicado acima (mais impostos aplicáveis). Cancele quando quiser nas
-            configurações da conta. No passo seguinte você revisa o resumo do pedido e
-            aceita os <Link to="/terms" className="lp-link">Termos de Serviço</Link> e a{" "}
-            <Link to="/privacy" className="lp-link">Política de Privacidade</Link> antes
-            do pagamento.
-          </p>
+              {current && (
+                <p className="lp-plans-terms">
+                  {t("landing.plans.terms", { price: money(current.amount, current.currency) })}
+                </p>
+              )}
+
+              <p className="lp-plans-legal">
+                <Link to="/terms" className="lp-link">{t("landing.footer.terms")}</Link>
+                {" · "}
+                <Link to="/privacy" className="lp-link">{t("landing.footer.privacy")}</Link>
+              </p>
+            </>
+          )}
 
           <div className="lp-plans-cta">
             <Link to="/checkout" className="lp-btn lp-btn-dark lp-btn-xl">
-              Obter meu plano <ArrowRight size={19} />
+              {t("landing.plans.cta")} <ArrowRight size={19} />
             </Link>
             <div className="lp-trust-row">
-              <span><Shield size={15} /> Pagamento seguro e garantia de 7 dias</span>
-              <span><Lock size={15} /> Transações criptografadas</span>
-              <span><CreditCard size={15} /> Todos os cartões e Pix</span>
+              <span><Shield size={15} /> {t("landing.trust.secure")}</span>
+              <span><Lock size={15} /> {t("landing.trust.encrypted")}</span>
+              <span><CreditCard size={15} /> {t("landing.trust.cards")}</span>
             </div>
           </div>
         </div>
@@ -427,8 +423,8 @@ export default function LandingPage() {
       {/* ===== FAQ ===== */}
       <section className="lp-section" id="faq">
         <div className="lp-container lp-container-narrow">
-          <p className="lp-eyebrow">Perguntas, respondidas</p>
-          <h2 className="lp-section-title">Dúvidas frequentes</h2>
+          <p className="lp-eyebrow">{t("landing.faq.eyebrow")}</p>
+          <h2 className="lp-section-title">{t("landing.faq.title")}</h2>
           <div className="lp-faq-wrap">
             {faqs.map((faq, i) => (
               <div key={i} className={`lp-faq-item ${openFaq === i ? "open" : ""}`}>
@@ -451,18 +447,15 @@ export default function LandingPage() {
       {/* ===== FINAL CTA ===== */}
       <section className="lp-final">
         <div className="lp-container">
-          <h2>Comece agora, no seu ritmo</h2>
-          <p>
-            Registre hábitos, treinos e refeições e acompanhe sua evolução todos os
-            dias. Sem fidelidade, sem mensalidade escondida.
-          </p>
+          <h2>{t("landing.final.title")}</h2>
+          <p>{t("landing.final.desc")}</p>
           <Link to="/checkout" className="lp-btn lp-btn-light lp-btn-xl">
-            Ver planos e preços <ArrowRight size={19} />
+            {t("landing.final.cta")} <ArrowRight size={19} />
           </Link>
           <div className="lp-trust-row lp-trust-row-light">
-            <span><Lock size={15} /> Compra 100% segura</span>
-            <span><Globe size={15} /> Pagamento via Stripe</span>
-            <span><Check size={15} /> Garantia de 7 dias</span>
+            <span><Lock size={15} /> {t("landing.trust.safe")}</span>
+            <span><Globe size={15} /> {t("landing.trust.stripe")}</span>
+            <span><Check size={15} /> {t("landing.trust.guarantee")}</span>
           </div>
         </div>
       </section>
@@ -477,30 +470,30 @@ export default function LandingPage() {
                 <span className="lp-logo-name">{appName}</span>
               </Link>
               <p className="lp-footer-tagline">
-                {branding.tagline || "Seu app de saúde e bem-estar. Acompanhe dietas, treinos e progresso."}
+                {branding.tagline || t("landing.hero.desc")}
               </p>
             </div>
             <div className="lp-footer-links">
-              <strong>Navegação</strong>
-              <a href="#como-funciona">Como funciona</a>
-              <a href="#incluso">O que está incluso</a>
-              <a href="#faq">Perguntas frequentes</a>
+              <strong>{t("landing.footer.navTitle")}</strong>
+              <a href="#como-funciona">{t("landing.nav.how")}</a>
+              <a href="#incluso">{t("landing.nav.included")}</a>
+              <a href="#faq">{t("landing.nav.faq")}</a>
             </div>
             <div className="lp-footer-links">
-              <strong>Conta</strong>
-              <Link to="/auth">Entrar</Link>
-              <Link to="/checkout">Ver planos e preços</Link>
-              <a href={`mailto:${branding.supportEmail}`}>Contato</a>
+              <strong>{t("landing.footer.accountTitle")}</strong>
+              <Link to="/auth">{t("landing.nav.login")}</Link>
+              <Link to="/checkout">{t("landing.nav.plans")}</Link>
+              <a href={`mailto:${branding.supportEmail}`}>{t("landing.footer.contact")}</a>
             </div>
             <div className="lp-footer-links">
-              <strong>Legal</strong>
-              <Link to="/terms">Termos de Serviço</Link>
-              <Link to="/privacy">Política de Privacidade</Link>
-              <Link to="/privacy">Política de Reembolso</Link>
+              <strong>{t("landing.footer.legalTitle")}</strong>
+              <Link to="/terms">{t("landing.footer.terms")}</Link>
+              <Link to="/privacy">{t("landing.footer.privacy")}</Link>
+              <Link to="/privacy">{t("landing.footer.refund")}</Link>
             </div>
           </div>
           <div className="lp-footer-bottom">
-            <span>© {new Date().getFullYear()} {appName}. Todos os direitos reservados.</span>
+            <span>© {new Date().getFullYear()} {appName}. {t("landing.footer.rights")}</span>
             <LanguageSwitcher showLabel={false} />
           </div>
         </div>

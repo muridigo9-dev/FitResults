@@ -8,12 +8,10 @@ import {
   Star,
   Shield,
   CreditCard,
-  Sparkles,
   Droplets,
   Moon,
   Utensils,
   Trophy,
-  Target,
   CalendarCheck,
   TrendingUp,
   Zap,
@@ -25,6 +23,20 @@ import {
 import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
 import { useGlobalBranding } from "@/hooks/useBranding";
 import "./LandingPage.css";
+
+/**
+ * Rating shown above the testimonials.
+ *
+ * Kept in one place on purpose: these are public claims about the product, so
+ * they need to match reality before the page goes in front of buyers. Set
+ * `show: false` to drop the whole rating row until there are real numbers to
+ * put here.
+ */
+const SOCIAL_PROOF = {
+  show: true,
+  score: "4,6 / 5",
+  count: "+2.300 avaliações verificadas",
+};
 
 // ===== DATA =====
 const plans = [
@@ -55,17 +67,17 @@ const steps = [
   {
     num: "1",
     title: "Escolha seu plano",
-    desc: "Escolha a opção mensal, trimestral ou anual. O preço de entrada e o de renovação aparecem juntos — o que você vê é exatamente o que paga.",
+    desc: "Mensal, trimestral ou anual. O preço de entrada e o de renovação aparecem lado a lado — o que você vê é exatamente o que paga.",
   },
   {
     num: "2",
-    title: "Crie sua conta",
-    desc: "Cadastre-se em segundos com e-mail ou login social. Você revisa e confirma tudo antes de qualquer pagamento.",
+    title: "Revise e confirme",
+    desc: "Antes do checkout você recebe um resumo: o total de hoje, o valor da renovação e o período. Nada é cobrado até você confirmar.",
   },
   {
     num: "3",
-    title: "Comece a evoluir",
-    desc: "Registre treinos, refeições e hábitos diários. Acompanhe seu progresso e ajuste tudo quando quiser, direto da página de perfil.",
+    title: "Comece — ajuste quando quiser",
+    desc: "Registre treinos, refeições e hábitos todo dia. Pause, troque de plano ou cancele quando quiser, direto nas configurações.",
   },
 ];
 
@@ -75,10 +87,11 @@ const included = [
   { icon: Utensils, text: "Planos alimentares e contagem de macros" },
   { icon: Trophy, text: "Gamificação com XP, níveis e conquistas" },
   { icon: TrendingUp, text: "Gráficos de progresso e métricas de evolução" },
-  { icon: Bell, text: "Lembretes suaves — você pode desativar quando quiser" },
-  { icon: Smartphone, text: "Funciona no celular: instale como app (PWA)" },
+  { icon: Bell, text: "Lembretes suaves — desative quando quiser" },
+  { icon: Smartphone, text: "Instale no celular como app (PWA)" },
   { icon: Shield, text: "Garantia de 7 dias no seu primeiro pedido" },
-  { icon: Zap, text: "Cancele quando quiser, sem ligações e sem burocracia" },
+  { icon: Zap, text: "Cancele nas configurações — sem ligações, sem formulários" },
+  { icon: CreditCard, text: "Preço integral exibido antes de cada cobrança" },
 ];
 
 const testimonials = [
@@ -121,12 +134,20 @@ const faqs = [
   },
   {
     q: "O app funciona no meu celular?",
-    a: "Sim! O FitResults é um PWA (Progressive Web App) que pode ser instalado direto no seu celular, como um app nativo — em Android, iOS e também no computador.",
+    a: "Sim! O app é um PWA (Progressive Web App) e pode ser instalado direto no seu celular, como um app nativo — em Android, iOS e também no computador.",
   },
   {
     q: "É adequado para o meu nível de condicionamento?",
-    a: "Sim. Você define seus objetivos, nível atual e preferências durante o cadastro, e a experiência se adapta a você. O FitResults oferece informações gerais sobre fitness e nutrição e não substitui aconselhamento médico — consulte seu médico antes de iniciar qualquer programa.",
+    a: "Sim. Você define seus objetivos, nível atual e preferências durante o cadastro, e a experiência se adapta a você. Oferecemos informações gerais sobre fitness e nutrição e não substituímos aconselhamento médico — consulte seu médico antes de iniciar qualquer programa.",
   },
+];
+
+/** The daily check-in rows drawn in the hero preview card. */
+const heroPreview = [
+  { icon: Droplets, label: "Água", value: "1,8 L", pct: 72 },
+  { icon: Moon, label: "Sono", value: "7 h 20", pct: 88 },
+  { icon: Dumbbell, label: "Treino", value: "Concluído", pct: 100 },
+  { icon: Utensils, label: "Refeições", value: "3 de 4", pct: 75 },
 ];
 
 // ===== COMPONENT =====
@@ -135,7 +156,17 @@ export default function LandingPage() {
   const [selectedPlan, setSelectedPlan] = useState(1);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
-  const appName = branding.appName || "FitResults";
+  const appName = branding.appName || "MooveBody";
+
+  const logoMark = branding.logoUrl ? (
+    <span className="lp-logo-mark">
+      <img src={branding.logoUrl} alt={appName} />
+    </span>
+  ) : (
+    <span className="lp-logo-mark">
+      <Dumbbell size={18} />
+    </span>
+  );
 
   return (
     <div className="lp-root">
@@ -143,15 +174,7 @@ export default function LandingPage() {
       <header className="lp-header">
         <div className="lp-container lp-header-inner">
           <Link to="/" className="lp-logo">
-            {branding.logoUrl ? (
-              <span className="lp-logo-mark">
-                <img src={branding.logoUrl} alt={appName} />
-              </span>
-            ) : (
-              <span className="lp-logo-mark">
-                <Dumbbell size={18} />
-              </span>
-            )}
+            {logoMark}
             <span className="lp-logo-name">{appName}</span>
           </Link>
 
@@ -163,9 +186,9 @@ export default function LandingPage() {
 
           <div className="lp-header-right">
             <LanguageSwitcher showLabel={false} />
-            <Link to="/auth" className="lp-header-login">Entrar</Link>
-            <Link to="/checkout" className="lp-btn lp-btn-header">
-              Ver planos e preços <ArrowRight size={16} />
+            <Link to="/auth" className="lp-btn lp-btn-ghost">Entrar</Link>
+            <Link to="/checkout" className="lp-btn lp-btn-dark">
+              Ver planos e preços
             </Link>
           </div>
         </div>
@@ -173,123 +196,80 @@ export default function LandingPage() {
 
       {/* ===== HERO ===== */}
       <section className="lp-hero" id="top">
-        <div className="lp-container">
-          <div className="lp-hero-badge">
-            <Sparkles size={16} />
-            Check-in, treinos e nutrição em um só lugar
-          </div>
-          <h1>
-            Seus treinos, sua alimentação e seus hábitos — <span>no seu ritmo</span>.
-          </h1>
-          <p className="lp-hero-desc">
-            O {appName} reúne check-ins diários, planos de treino e orientação
-            nutricional em um único app. Acompanhe sua evolução, mantenha a constância
-            e veja resultados reais — com todos os preços exibidos antes de você pagar.
-          </p>
-          <div className="lp-hero-ctas">
-            <Link to="/checkout" className="lp-btn lp-btn-primary">
-              Ver planos e preços <ArrowRight size={18} />
-            </Link>
-            <a href="#como-funciona" className="lp-btn lp-btn-outline">
-              Ver como funciona
-            </a>
-          </div>
-          <div className="lp-hero-trust">
-            <span><Check size={16} /> Sem fidelidade</span>
-            <span><Check size={16} /> Cancele quando quiser</span>
-            <span><Check size={16} /> Garantia de 7 dias</span>
-          </div>
-        </div>
-      </section>
-
-      {/* ===== PLANS ===== */}
-      <section className="lp-plans" id="planos">
-        <div className="lp-container">
-          <p className="lp-plans-note">
-            Escolha entre os planos mensal, trimestral ou anual. Todos os preços são
-            exibidos antes do pagamento — sem renovações ocultas e sem surpresas na
-            letra pequena.
-          </p>
-
-          <div className="lp-plans-grid">
-            {plans.map((plan, i) => (
-              plan.popular ? (
-                <div key={i} className="lp-plan-cell">
-                  <div className="lp-plan-popular">
-                    <span className="lp-plan-popular-badge">Mais popular</span>
-                  </div>
-                  <div
-                    className={`lp-plan-card has-popular ${selectedPlan === i ? "selected" : ""}`}
-                    onClick={() => setSelectedPlan(i)}
-                  >
-                    <div className="lp-plan-radio-row">
-                      <span className="lp-plan-radio">
-                        {selectedPlan === i && <span className="lp-plan-radio-dot" />}
-                      </span>
-                      <span className="lp-plan-name">{plan.name}</span>
-                    </div>
-                    <p className="lp-plan-renew">{plan.renew}</p>
-                    <div className="lp-plan-price">
-                      {plan.price} <span>{plan.period}</span>
-                    </div>
-                    <Link to="/checkout" className="lp-plan-cta">
-                      Começar <ArrowRight size={16} />
-                    </Link>
-                  </div>
-                </div>
-              ) : (
-                <div
-                  key={i}
-                  className={`lp-plan-card ${selectedPlan === i ? "selected" : ""}`}
-                  onClick={() => setSelectedPlan(i)}
-                >
-                  <div className="lp-plan-radio-row">
-                    <span className="lp-plan-radio">
-                      {selectedPlan === i && <span className="lp-plan-radio-dot" />}
-                    </span>
-                    <span className="lp-plan-name">{plan.name}</span>
-                  </div>
-                  <p className="lp-plan-renew">{plan.renew}</p>
-                  <div className="lp-plan-price">
-                    {plan.price} <span>{plan.period}</span>
-                  </div>
-                  <Link to="/checkout" className="lp-plan-cta">
-                    Começar <ArrowRight size={16} />
-                  </Link>
-                </div>
-              )
-            ))}
-          </div>
-
-          <div className="lp-plans-footer">
-            <p className="lp-plans-note" style={{ marginBottom: 0 }}>
-              Nenhum pagamento é feito nesta etapa — você revisa e confirma seu plano
-              na página de checkout.
+        <div className="lp-container lp-hero-inner">
+          <div className="lp-hero-copy">
+            <h1>
+              Treine com constância — <span>no seu ritmo</span>
+            </h1>
+            <p className="lp-hero-desc">
+              Treinos guiados, orientação nutricional e check-in diário reunidos em
+              um só lugar. Todo preço aparece antes de você pagar — sem renovação
+              escondida, sem surpresa na letra miúda.
             </p>
-            <Link to="/checkout" className="lp-btn lp-btn-dark" style={{ fontSize: "1.1rem", padding: "18px 44px" }}>
-              Obter meu plano <ArrowRight size={20} />
-            </Link>
-            <div className="lp-plans-secure">
-              <span><Shield size={16} /> Pagamento seguro e criptografado</span>
-              <span><CreditCard size={16} /> Todos os cartões e Pix</span>
-              <span><Check size={16} /> Garantia de 7 dias</span>
+            <div className="lp-hero-ctas">
+              <Link to="/checkout" className="lp-btn lp-btn-dark lp-btn-lg">
+                Ver planos
+              </Link>
+              <a href="#como-funciona" className="lp-btn lp-btn-outline lp-btn-lg">
+                Como funciona
+              </a>
+            </div>
+            <p className="lp-hero-note">
+              Planos a partir de um mês. Cancele quando quiser.
+            </p>
+          </div>
+
+          {/* Product preview, drawn rather than photographed: there is no
+              photography in the project yet, and a real screenshot beats a
+              stock photo for a tracking app anyway. */}
+          <div className="lp-hero-visual" aria-hidden="true">
+            <div className="lp-preview">
+              <div className="lp-preview-head">
+                <span className="lp-preview-title">Hoje</span>
+                <span className="lp-preview-streak">
+                  <Zap size={13} /> 12 dias seguidos
+                </span>
+              </div>
+              {heroPreview.map((row, i) => {
+                const Icon = row.icon;
+                return (
+                  <div key={i} className="lp-preview-row">
+                    <span className="lp-preview-icon"><Icon size={16} /></span>
+                    <div className="lp-preview-body">
+                      <div className="lp-preview-labels">
+                        <span>{row.label}</span>
+                        <strong>{row.value}</strong>
+                      </div>
+                      <div className="lp-preview-bar">
+                        <span style={{ width: `${row.pct}%` }} />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              <div className="lp-preview-foot">
+                <Check size={14} /> Check-in do dia concluído
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* ===== HOW IT WORKS ===== */}
-      <section className="lp-section lp-section-alt" id="como-funciona">
+      <section className="lp-section" id="como-funciona">
         <div className="lp-container">
-          <h2 className="lp-section-title">Como funciona</h2>
+          <p className="lp-eyebrow">Como funciona</p>
+          <h2 className="lp-section-title">
+            Três passos simples — você no controle o tempo todo
+          </h2>
           <p className="lp-section-subtitle">
-            Três passos simples — você tem o controle em todo momento. Você revisa e
-            confirma seu plano completo antes de qualquer pagamento.
+            Você vê e confirma o plano completo antes de qualquer pagamento. Nada é
+            cobrado até você dizer sim.
           </p>
           <div className="lp-steps-grid">
             {steps.map((step, i) => (
               <div key={i} className="lp-step">
-                <div className="lp-step-num">{step.num}</div>
+                <div className="lp-step-num">Passo {step.num}</div>
                 <h3>{step.title}</h3>
                 <p>{step.desc}</p>
               </div>
@@ -299,50 +279,61 @@ export default function LandingPage() {
       </section>
 
       {/* ===== INCLUDED ===== */}
-      <section className="lp-section" id="incluso">
+      <section className="lp-section lp-section-alt" id="incluso">
         <div className="lp-container">
-          <h2 className="lp-section-title">O que está incluso</h2>
+          <p className="lp-eyebrow">O que está incluso</p>
+          <h2 className="lp-section-title">
+            Um plano completo — a única escolha é por quanto tempo
+          </h2>
           <p className="lp-section-subtitle">
-            Um plano completo — você só escolhe o período. Todos os planos incluem a
-            experiência completa do {appName}. O único que muda é a forma de cobrança.
+            Todos os planos incluem a experiência completa do {appName}. O período de
+            cobrança é a única coisa que muda.
           </p>
-          <div className="lp-included-grid">
-            {included.map((item, i) => {
-              const Icon = item.icon;
-              return (
-                <div key={i} className="lp-included-item">
-                  <Icon size={20} />
-                  <span>{item.text}</span>
-                </div>
-              );
-            })}
+          <div className="lp-included-panel">
+            <div className="lp-included-grid">
+              {included.map((item, i) => {
+                const Icon = item.icon;
+                return (
+                  <div key={i} className="lp-included-item">
+                    <span className="lp-included-check"><Check size={13} strokeWidth={3} /></span>
+                    <span className="lp-included-text">
+                      <Icon size={15} className="lp-included-icon" />
+                      {item.text}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       </section>
 
       {/* ===== TESTIMONIALS ===== */}
-      <section className="lp-section lp-section-alt" id="depoimentos">
+      <section className="lp-section" id="depoimentos">
         <div className="lp-container">
-          <h2 className="lp-section-title">Nossos membros opinam</h2>
-          <p className="lp-section-subtitle">
-            A confiança de quem procurava um começo mais simples.
-          </p>
-          <div className="lp-testimonials-rating">
-            <div className="lp-testimonials-stars">
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} size={18} fill="var(--lp-star)" color="var(--lp-star)" />
-              ))}
+          <p className="lp-eyebrow">Dos nossos membros</p>
+          <h2 className="lp-section-title">
+            A confiança de quem queria um começo mais simples
+          </h2>
+
+          {SOCIAL_PROOF.show && (
+            <div className="lp-rating-row">
+              <span className="lp-stars">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} size={17} fill="var(--lp-star)" color="var(--lp-star)" />
+                ))}
+              </span>
+              <span className="lp-rating-score">{SOCIAL_PROOF.score}</span>
+              <span className="lp-rating-count">· {SOCIAL_PROOF.count}</span>
             </div>
-            <span className="lp-testimonials-score">4,6 / 5</span>
-          </div>
-          <p className="lp-testimonials-count">+2.300 avaliações verificadas</p>
+          )}
 
           <div className="lp-testimonials-grid">
             {testimonials.map((t, i) => (
               <div key={i} className="lp-testimonial-card">
-                <div className="lp-testimonial-stars">
+                <div className="lp-stars">
                   {[...Array(5)].map((_, j) => (
-                    <Star key={j} size={16} fill="var(--lp-star)" color="var(--lp-star)" />
+                    <Star key={j} size={15} fill="var(--lp-star)" color="var(--lp-star)" />
                   ))}
                 </div>
                 <p className="lp-testimonial-text" dangerouslySetInnerHTML={{ __html: t.text }} />
@@ -351,8 +342,7 @@ export default function LandingPage() {
                   <div>
                     <div className="lp-testimonial-name">{t.name}</div>
                     <div className="lp-testimonial-role">
-                      <Check size={12} style={{ verticalAlign: "-2px", marginRight: 2 }} />
-                      {t.role}
+                      <Check size={12} /> {t.role}
                     </div>
                   </div>
                 </div>
@@ -360,7 +350,7 @@ export default function LandingPage() {
             ))}
           </div>
 
-          <p className="lp-testimonials-note">
+          <p className="lp-fineprint">
             As avaliações refletem experiências e pontos de vista individuais dos
             membros; os resultados variam e não são garantidos. As avaliações são de
             compradores verificados e não são incentivadas. O {appName} não oferece
@@ -370,21 +360,87 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ===== PLANS ===== */}
+      <section className="lp-section lp-section-alt" id="planos">
+        <div className="lp-container">
+          <p className="lp-eyebrow">Planos e preços</p>
+          <h2 className="lp-section-title">Preço completo, nada escondido</h2>
+          <p className="lp-section-subtitle">
+            Cada plano mostra o preço de entrada e o de renovação juntos. Você revisa
+            e confirma tudo antes de pagar.
+          </p>
+
+          <div className="lp-plans-grid">
+            {plans.map((plan, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => setSelectedPlan(i)}
+                aria-pressed={selectedPlan === i}
+                className={`lp-plan-card ${selectedPlan === i ? "selected" : ""} ${plan.popular ? "has-popular" : ""}`}
+              >
+                {plan.popular && <span className="lp-plan-ribbon">Mais popular</span>}
+                <span className="lp-plan-inner">
+                  <span className="lp-plan-radio-row">
+                    <span className="lp-plan-radio">
+                      {selectedPlan === i && <span className="lp-plan-radio-dot" />}
+                    </span>
+                    <span className="lp-plan-name">{plan.name}</span>
+                  </span>
+                  <span className="lp-plan-renew">{plan.renew}</span>
+                  <span className="lp-plan-price">
+                    {plan.price} <span>{plan.period}</span>
+                  </span>
+                </span>
+              </button>
+            ))}
+          </div>
+
+          <p className="lp-plans-note">
+            Nenhum pagamento nesta etapa — você revisa e confirma seu pedido no passo
+            seguinte.
+          </p>
+
+          <p className="lp-plans-terms">
+            Você será cobrado em {plans[selectedPlan].price} hoje. A menos que
+            cancele, sua assinatura renova automaticamente pelo preço de renovação
+            indicado acima (mais impostos aplicáveis). Cancele quando quiser nas
+            configurações da conta. No passo seguinte você revisa o resumo do pedido e
+            aceita os <Link to="/terms" className="lp-link">Termos de Serviço</Link> e a{" "}
+            <Link to="/privacy" className="lp-link">Política de Privacidade</Link> antes
+            do pagamento.
+          </p>
+
+          <div className="lp-plans-cta">
+            <Link to="/checkout" className="lp-btn lp-btn-dark lp-btn-xl">
+              Obter meu plano <ArrowRight size={19} />
+            </Link>
+            <div className="lp-trust-row">
+              <span><Shield size={15} /> Pagamento seguro e garantia de 7 dias</span>
+              <span><Lock size={15} /> Transações criptografadas</span>
+              <span><CreditCard size={15} /> Todos os cartões e Pix</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ===== FAQ ===== */}
       <section className="lp-section" id="faq">
-        <div className="lp-container">
-          <h2 className="lp-section-title">Perguntas, respondidas</h2>
-          <p className="lp-section-subtitle">Perguntas frequentes</p>
+        <div className="lp-container lp-container-narrow">
+          <p className="lp-eyebrow">Perguntas, respondidas</p>
+          <h2 className="lp-section-title">Dúvidas frequentes</h2>
           <div className="lp-faq-wrap">
             {faqs.map((faq, i) => (
-              <div
-                key={i}
-                className={`lp-faq-item ${openFaq === i ? "open" : ""}`}
-              >
-                <div className="lp-faq-q" onClick={() => setOpenFaq(openFaq === i ? null : i)}>
+              <div key={i} className={`lp-faq-item ${openFaq === i ? "open" : ""}`}>
+                <button
+                  type="button"
+                  className="lp-faq-q"
+                  aria-expanded={openFaq === i}
+                  onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                >
                   {faq.q}
-                  <ChevronDown size={20} />
-                </div>
+                  <ChevronDown size={19} />
+                </button>
                 {openFaq === i && <div className="lp-faq-a">{faq.a}</div>}
               </div>
             ))}
@@ -397,17 +453,16 @@ export default function LandingPage() {
         <div className="lp-container">
           <h2>Comece agora, no seu ritmo</h2>
           <p>
-            Registre seus hábitos, treinos e refeições e acompanhe sua evolução todos
-            os dias. Sem fidelidade, sem mensalidades escondidas — e com preços
-            sempre claros antes de você pagar.
+            Registre hábitos, treinos e refeições e acompanhe sua evolução todos os
+            dias. Sem fidelidade, sem mensalidade escondida.
           </p>
-          <Link to="/checkout" className="lp-btn lp-btn-primary" style={{ fontSize: "1.05rem", padding: "18px 44px" }}>
-            Ver planos e preços <ArrowRight size={20} />
+          <Link to="/checkout" className="lp-btn lp-btn-light lp-btn-xl">
+            Ver planos e preços <ArrowRight size={19} />
           </Link>
-          <div className="lp-plans-secure" style={{ marginTop: 24 }}>
-            <span><Lock size={16} /> Compra 100% segura</span>
-            <span><Globe size={16} /> Pagamento via Stripe</span>
-            <span><Check size={16} /> Garantia de 7 dias</span>
+          <div className="lp-trust-row lp-trust-row-light">
+            <span><Lock size={15} /> Compra 100% segura</span>
+            <span><Globe size={15} /> Pagamento via Stripe</span>
+            <span><Check size={15} /> Garantia de 7 dias</span>
           </div>
         </div>
       </section>
@@ -418,11 +473,7 @@ export default function LandingPage() {
           <div className="lp-footer-grid">
             <div className="lp-footer-brand">
               <Link to="/" className="lp-logo">
-                {branding.logoUrl ? (
-                  <span className="lp-logo-mark"><img src={branding.logoUrl} alt={appName} /></span>
-                ) : (
-                  <span className="lp-logo-mark"><Dumbbell size={18} /></span>
-                )}
+                {logoMark}
                 <span className="lp-logo-name">{appName}</span>
               </Link>
               <p className="lp-footer-tagline">
@@ -457,4 +508,3 @@ export default function LandingPage() {
     </div>
   );
 }
-

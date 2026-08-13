@@ -51,7 +51,8 @@ const includedIcons = [
 
 type LandingPrice = {
   priceId: string;
-  name: string;
+  /** Admin-set override; null means the name follows the interface language. */
+  name: string | null;
   interval: string;
   amount: number;
   currency: string;
@@ -108,7 +109,9 @@ function useLandingPrices() {
         for (const price of prices.filter(p => p.plan_id === plan.id)) {
           rows.push({
             priceId: price.price_id,
-            name: price.label || plan.name,
+            // `label` is an explicit admin override and wins when set; leaving
+            // it null lets the card name follow the interface language.
+            name: price.label ?? null,
             interval: String(price.interval || "month"),
             amount: Number(price.display_price),
             currency: price.display_currency || "USD",
@@ -138,6 +141,15 @@ export default function LandingPage() {
 
   const money = (amount: number, currency: string) =>
     new Intl.NumberFormat(locale, { style: "currency", currency }).format(amount);
+
+  /** Card title: the admin's label when set, otherwise the localised period. */
+  const planName = (price: LandingPrice) => {
+    if (price.name) return price.name;
+    if (price.interval === "year" || price.interval === "annual") return t("landing.plans.nameYear");
+    if (price.interval === "quarter" || price.interval === "quarterly") return t("landing.plans.nameQuarter");
+    if (price.interval === "semester" || price.interval === "semiannual") return t("landing.plans.nameSemester");
+    return t("landing.plans.nameMonth");
+  };
 
   /** "/month", "/3 months", "/year" for the price suffix. */
   const periodLabel = (interval: string) => {
@@ -378,7 +390,7 @@ export default function LandingPage() {
                         <span className="lp-plan-radio">
                           {selected === i && <span className="lp-plan-radio-dot" />}
                         </span>
-                        <span className="lp-plan-name">{price.name}</span>
+                        <span className="lp-plan-name">{planName(price)}</span>
                       </span>
                       <span className="lp-plan-renew">{renewLabel(price)}</span>
                       <span className="lp-plan-price">

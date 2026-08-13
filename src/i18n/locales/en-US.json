@@ -1555,7 +1555,11 @@
       "renewYear": "Auto-renews at {price} every year until cancelled.",
       "perMonth": "/month",
       "perMonths": "/{count} months",
-      "perYear": "/year"
+      "perYear": "/year",
+      "nameMonth": "Monthly plan",
+      "nameQuarter": "Quarterly plan",
+      "nameSemester": "6-month plan",
+      "nameYear": "Annual plan"
     },
     "trust": {
       "secure": "Secure payment and 7-day guarantee",

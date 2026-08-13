@@ -1556,7 +1556,11 @@
       "renewYear": "Renova automaticamente em {price} a cada ano, até você cancelar.",
       "perMonth": "/mês",
       "perMonths": "/{count} meses",
-      "perYear": "/ano"
+      "perYear": "/ano",
+      "nameMonth": "Plano Mensal",
+      "nameQuarter": "Plano Trimestral",
+      "nameSemester": "Plano Semestral",
+      "nameYear": "Plano Anual"
     },
     "trust": {
       "secure": "Pagamento seguro e garantia de 7 dias",

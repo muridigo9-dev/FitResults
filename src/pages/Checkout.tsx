@@ -74,59 +74,69 @@ export default function Checkout() {
       try {
         // isLoadingPlans is already true by default
 
-        const { data: plansData, error: plansError } = await (supabase as any)
-          .from("plans")
-          .select("*")
-          .eq("is_active", true)
-          .order("display_order", { ascending: true });
+        // Prices come from Stripe via `list-plans`; the marketing copy that
+        // Stripe has no room for (description, feature bullets) still comes
+        // from `plans`. Mirroring prices into `plan_prices` is what let the
+        // site advertise an amount the checkout would never charge, so that
+        // copy is gone and Stripe is the only place a price is defined.
+        const [{ data: planContent }, { data: stripePlans, error: stripeError }] =
+          await Promise.all([
+            (supabase as any)
+              .from("plans")
+              .select("*")
+              .eq("is_active", true)
+              .order("display_order", { ascending: true }),
+            supabase.functions.invoke("list-plans"),
+          ]);
 
-        if (plansError) throw plansError;
+        if (stripeError) throw stripeError;
 
-        const { data: pricesData, error: pricesError } = await (supabase as any)
-          .from("plan_prices")
-          .select("*")
-          .eq("is_active", true);
-
-        if (pricesError) throw pricesError;
-
-        const formattedPlans = (plansData || []).map((plan: any) => {
-          const prices = (pricesData || []).filter((p: any) => p.plan_id === plan.id);
-          const price = prices.find((p: any) => p.interval === 'month') || prices[0];
-
-          if (!price) return null;
-
-          let finalFeatures: string[] = [];
-
-          const getSafeArray = (arr: any): string[] => {
-            if (Array.isArray(arr)) return arr;
-            if (typeof arr === 'string') {
-              try {
-                const parsed = JSON.parse(arr);
-                if (Array.isArray(parsed)) return parsed;
-              } catch (e) {
-                return [arr];
-              }
+        const getSafeArray = (arr: any): string[] => {
+          if (Array.isArray(arr)) return arr;
+          if (typeof arr === 'string') {
+            try {
+              const parsed = JSON.parse(arr);
+              if (Array.isArray(parsed)) return parsed;
+            } catch (e) {
+              return [arr];
             }
-            return [];
-          };
-
-          if (plan.features) {
-            finalFeatures = getSafeArray(plan.features);
           }
+          return [];
+        };
+
+        type PlanContent = { id: string; name: string; description: string | null; features: unknown };
+        type StripePlanRow = {
+          priceId: string;
+          amount: number;
+          currency: string;
+          interval: string;
+          label: string | null;
+          productName: string | null;
+          planId: string | null;
+        };
+
+        const contentByPlanId = new Map<string, PlanContent>(
+          ((planContent || []) as PlanContent[]).map(p => [p.id, p])
+        );
+
+        // One card per billing period, so the checkout offers the same choice
+        // the landing page advertised rather than collapsing to one price.
+        const formattedPlans = ((stripePlans?.plans || []) as StripePlanRow[]).map((price, i) => {
+          const content = price.planId ? contentByPlanId.get(price.planId) : undefined;
 
           return {
-            plan_id: plan.id,
-            plan_name: plan.name,
-            description: plan.description,
-            display_order: plan.display_order,
-            price_id: price.price_id,
-            display_price: price.display_price,
-            display_currency: price.display_currency,
+            plan_id: price.planId,
+            plan_name: price.label || price.productName || content?.name || "",
+            description: content?.description ?? null,
+            display_order: i,
+            price_id: price.priceId,
+            display_price: price.amount,
+            display_currency: price.currency,
             price_interval: price.interval,
-            features: finalFeatures,
-            promo_text: price.promo_text
+            features: getSafeArray(content?.features),
+            promo_text: null,
           };
-        }).filter((p: any) => p !== null);
+        });
 
         setPlans(formattedPlans);
         if (formattedPlans.length > 0 && !selectedPlan) {

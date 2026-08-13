@@ -1388,251 +1388,164 @@
   },
   "landing": {
     "nav": {
-      "login": "Entrar",
-      "subscribe": "Suscribirse Ahora"
+      "how": "Cómo funciona",
+      "included": "Qué incluye",
+      "faq": "FAQ",
+      "login": "Iniciar sesión",
+      "plans": "Ver planes y precios"
     },
     "hero": {
-      "badge": "Plataforma Completa de Fitness",
-      "title": "Transforma tu {highlight} en una Experiencia Digital",
-      "highlight": "Gimnasio o Consultoría",
-      "subtitle": "La plataforma white-label más completa para entrenadores personales, nutricionistas y gimnasios. Gestión de alumnos, entrenamientos, dietas y gamificación en un solo lugar.",
-      "ctaStart": "Empezar Ahora",
-      "ctaAccount": "Ya tengo cuenta"
+      "title": "Entrena con constancia —",
+      "accent": "a tu propio ritmo",
+      "desc": "Entrenamientos guiados, orientación nutricional y check-in diario en un solo lugar. Cada precio se muestra antes de pagar — sin renovaciones ocultas ni sorpresas en la letra pequeña.",
+      "ctaPlans": "Ver planes",
+      "ctaHow": "Cómo funciona",
+      "note": "Cancela cuando quieras, desde Ajustes."
     },
-    "stats": {
-      "features": "Funcionalidades",
-      "languages": "Idiomas",
-      "mobile": "Mobile Ready",
-      "support": "Soporte",
-      "featuresVal": "50+",
-      "languagesVal": "3",
-      "mobileVal": "PWA",
-      "supportVal": "24/7"
-    },
-    "habits": {
-      "hydration": "Hidratación",
+    "preview": {
+      "today": "Hoy",
+      "streak": "{days} días seguidos",
+      "water": "Agua",
       "sleep": "Sueño",
-      "training": "Entrenos",
-      "nutrition": "Nutrición",
-      "wellbeing": "Bienestar",
-      "goals": "Metas"
+      "workout": "Entreno",
+      "meals": "Comidas",
+      "workoutDone": "Completado",
+      "done": "Check-in de hoy completado"
     },
-    "features": {
-      "badge": "Funcionalidades",
-      "title": "Todo lo que necesitas en un solo lugar",
-      "subtitle": "Una plataforma completa con más de 50 funcionalidades para transformar la experiencia de tus clientes",
-      "categories": {
-        "users": {
-          "title": "Gestión de Usuarios",
-          "items": [
-            "Registro e inicio de sesión con email/contraseña",
-            "Autenticación social (Google, etc.)",
-            "Recuperación de contraseña por email",
-            "Perfil completo con avatar",
-            "Gestión de suscripciones",
-            "Niveles de acceso (Admin, Personal, Alumno)"
-          ]
-        },
-        "dashboard": {
-          "title": "Dashboard Inteligente",
-          "items": [
-            "Resumen diario de actividades",
-            "Gráficos de progreso semanal",
-            "Tarjetas de macros y calorías",
-            "Seguimiento de peso",
-            "Progreso de hidratación",
-            "Indicadores de humor"
-          ]
-        },
-        "checkin": {
-          "title": "Check-in Diario",
-          "items": [
-            "Wizard intuitivo paso a paso",
-            "Registro de peso corporal",
-            "Control de ingesta de agua",
-            "Seguimiento de humor",
-            "Registro de comidas",
-            "Marcado de entrenos e hábitos"
-          ]
-        },
-        "nutrition": {
-          "title": "Nutrición y Dietas",
-          "items": [
-            "Calculadora de macros personalizada",
-            "Planes de dieta personalizados",
-            "Asignación por entrenador personal",
-            "Equivalencias alimentarias",
-            "Control de calorías diarias",
-            "Metas nutricionales personalizadas"
-          ]
-        },
-        "workouts": {
-          "title": "Entrenos y Ejercicios",
-          "items": [
-            "Catálogo de ejercicios con imágenes",
-            "Entrenos personalizados por grupo",
-            "Niveles de dificultad",
-            "Asignación por entrenador personal",
-            "Seguimiento de series/reps",
-            "Historial de entrenos"
-          ]
-        },
-        "gamification": {
-          "title": "Gamificación",
-          "items": [
-            "Sistema de puntos y XP",
-            "Niveles: Bronce a Diamante",
-            "Desafíos semanales e mensuales",
-            "Ranking de la comunidad",
-            "Logros desbloqueables",
-            "Recompensas por consistencia"
-          ]
-        },
-        "habits": {
-          "title": "Hábitos Saludables",
-          "items": [
-            "Hábitos del sistema predefinidos",
-            "Creación de hábitos personalizados",
-            "Tracking diario visual",
-            "Rachas de consistencia",
-            "Metas configurables",
-            "Historial completo"
-          ]
-        },
-        "metrics": {
-          "title": "Métricas Corporales",
-          "items": [
-            "Cálculo de IMC automático",
-            "Peso ideal estimado",
-            "Tasa metabólica basal (TMB)",
-            "Gasto calórico diário (TDEE)",
-            "Composición corporal",
-            "Gráficos de evolución"
-          ]
-        },
-        "trainer": {
-          "title": "Modo Entrenador Personal",
-          "items": [
-            "Dashboard exclusivo del entrenador",
-            "Gestión de alumnos completa",
-            "Asignación de contenidos",
-            "Chat integrado con alumnos",
-            "Anamnesis y evaluación inicial",
-            "Invitaciones por email/link"
-          ]
-        },
-        "communication": {
-          "title": "Comunicación",
-          "items": [
-            "Chat en tiempo real",
-            "Sistema de tickets de soporte",
-            "Notificaciones push (PWA)",
-            "Notificaciones in-app",
-            "Historial de conversaciones",
-            "Adjuntos y medios"
-          ]
-        },
-        "admin_panel": {
-          "title": "Panel Administrativo",
-          "items": [
-            "Dashboard con estadísticas",
-            "Gestão completa de usuarios",
-            "CRUD de contenidos",
-            "Configuración de planes Stripe",
-            "Gestión de cancelaciones",
-            "Sistema de feature flags"
-          ]
-        },
-        "branding": {
-          "title": "White-Label & Branding",
-          "items": [
-            "Logo y favicon personalizables",
-            "Paleta de colores personalizada",
-            "Nombre del app configurable",
-            "Temas claro y oscuro",
-            "PWA con branding propio",
-            "Identidade visual completa"
-          ]
-        }
-      }
-    },
-    "tech": {
-      "badge": "Tecnología",
-      "title": "Construido con las mejores tecnologías",
-      "pwa": {
-        "title": "PWA Completo",
-        "desc": "Instalable en cualquier dispositivo, funciona offline"
-      },
-      "multiLanguage": {
-        "title": "Multi-idioma",
-        "desc": "Soporte a Portugués, Inglés y Español"
-      },
-      "security": {
-        "title": "Seguridad Total",
-        "desc": "Autenticación robusta, RLS en la base de datos"
-      },
-      "stripe": {
-        "title": "Stripe Integrado",
-        "desc": "Pagos recurrentes, webhooks automáticos"
-      },
-      "performance": {
-        "title": "Alto Rendimiento",
-        "desc": "React + Vite, carga ultra rápida"
-      },
-      "multiTenant": {
-        "title": "Multi-tenant",
-        "desc": "Soporte para gimnasios y entrenadores"
-      }
-    },
-    "admin_preview": {
-      "badge": "Panel Admin",
-      "title": "Control total de su negocio",
-      "desc": "Un panel administrativo completo para gestionar usuarios, contenidos, planes, pagos y mucho más.",
-      "items": [
-        "Gestión completa de usuarios con filtros y búsqueda",
-        "CRUD de treinos, dietas e desafíos",
-        "Integración Stripe con planos y webhooks",
-        "Métricas y reportes detallados",
-        "Sistema de notificaciones y emails",
-        "Feature flags e configuraciones avanzadas"
-      ],
-      "previewText": "Vista Previa del Panel Admin"
-    },
-    "testimonials": {
-      "badge": "Testimonios",
-      "title": "Lo que dicen nuestros clientes",
-      "items": [
+    "how": {
+      "eyebrow": "Cómo funciona",
+      "title": "Tres pasos simples — tú tienes el control en todo momento",
+      "subtitle": "Ves y confirmas el plan completo antes de cualquier pago. No se cobra nada hasta que digas que sí.",
+      "stepLabel": "Paso {n}",
+      "steps": [
         {
-          "name": "Carlos Silva",
-          "role": "Entrenador Personal",
-          "text": "Revolucionó la forma en que gestiono a mis alumnos. ¡Todo en uno!"
+          "title": "Elige tu plan",
+          "desc": "El precio de entrada y el de renovación aparecen juntos — lo que ves es exactamente lo que pagas."
         },
         {
-          "name": "Ana Costa",
-          "role": "Nutricionista",
-          "text": "La integración de dietas y seguimiento es perfecta para mis pacientes."
+          "title": "Revisa y confirma",
+          "desc": "Antes del pago recibes un resumen: el total de hoy, el importe de renovación y el período. No se cobra nada hasta que confirmes."
         },
         {
-          "name": "Pedro Lima",
-          "role": "Dueño de Gimnasio",
-          "text": "El white-label nos permitió lanzar nuestra propia app rápidamente."
+          "title": "Empieza — ajusta cuando quieras",
+          "desc": "Registra entrenamientos, comidas y hábitos cada día. Pausa, cambia de plan o cancela cuando quieras, desde Ajustes."
         }
       ]
     },
-    "cta": {
-      "title": "¿Listo para transformar tu negocio?",
-      "subtitle": "Únete a cientos de profesionales que ya utilizan FitResults para ofrecer una experiencia digital increíble a sus clientes.",
-      "ctaFree": "Empezar Gratis",
-      "ctaSales": "Hablar con Ventas"
+    "included": {
+      "eyebrow": "Qué incluye",
+      "title": "Un plan completo — lo único que eliges es por cuánto tiempo",
+      "subtitle": "Todos los planes incluyen la experiencia completa de {appName}. El período de facturación es lo único que cambia.",
+      "items": [
+        "Check-in diario: agua, sueño, entrenamiento y comidas",
+        "Entrenamientos guiados y biblioteca de ejercicios",
+        "Planes de comidas y conteo de macros",
+        "Gamificación con XP, niveles y logros",
+        "Gráficos de progreso y métricas corporales",
+        "Recordatorios suaves — desactívalos cuando quieras",
+        "Instálala en el móvil como app (PWA)",
+        "Garantía de 7 días en tu primer pedido",
+        "Cancela en Ajustes — sin llamadas ni formularios",
+        "Precio completo mostrado antes de cada cobro"
+      ]
+    },
+    "members": {
+      "eyebrow": "De nuestros miembros",
+      "title": "La confianza de quienes querían un comienzo más simple",
+      "fineprint": "Las reseñas reflejan experiencias y opiniones individuales; los resultados varían y no están garantizados. {appName} no ofrece asesoramiento médico — consulta a tu médico antes de comenzar cualquier programa de ejercicio o nutrición.",
+      "items": [
+        {
+          "initials": "MC",
+          "name": "Mariana Costa",
+          "role": "Miembro verificada",
+          "text": "Por fin un lugar para registrarlo todo — entrenamiento, agua y comidas en una sola app. ¡Muy motivador! Ya se lo he recomendado a mis amigas."
+        },
+        {
+          "initials": "JR",
+          "name": "João Ribeiro",
+          "role": "Miembro verificado",
+          "text": "El check-in diario me dio una constancia que nunca tuve. Tres meses seguidos sin perder el ritmo."
+        },
+        {
+          "initials": "AS",
+          "name": "Aline Santos",
+          "role": "Miembro verificada",
+          "text": "Pude cancelar y recibir mi reembolso rápidamente, con una atención muy amable. Pero volví enseguida, porque echaba de menos la app."
+        }
+      ]
+    },
+    "plans": {
+      "eyebrow": "Planes y precios",
+      "title": "Precio completo, nada oculto",
+      "subtitle": "Cada plan muestra el precio de entrada y el de renovación juntos. Revisas y confirmas todo antes de pagar.",
+      "popular": "Más popular",
+      "note": "Ningún pago en este paso — revisarás y confirmarás tu pedido a continuación.",
+      "terms": "Se te cobrará {price} hoy. A menos que canceles, tu suscripción se renueva automáticamente al precio indicado arriba (más impuestos aplicables). Cancela cuando quieras en los ajustes de la cuenta. En el siguiente paso revisarás el resumen del pedido antes del pago.",
+      "cta": "Obtener mi plan",
+      "empty": "Los planes se están actualizando. Inténtalo de nuevo en unos instantes.",
+      "renewMonth": "Se renueva automáticamente por {price} cada mes hasta que canceles.",
+      "renewMonths": "Se renueva automáticamente por {price} cada {count} meses hasta que canceles.",
+      "renewYear": "Se renueva automáticamente por {price} cada año hasta que canceles.",
+      "perMonth": "/mes",
+      "perMonths": "/{count} meses",
+      "perYear": "/año",
+      "nameMonth": "Plan Mensual",
+      "nameQuarter": "Plan Trimestral",
+      "nameSemester": "Plan Semestral",
+      "nameYear": "Plan Anual"
+    },
+    "trust": {
+      "secure": "Pago seguro y garantía de 7 días",
+      "encrypted": "Transacciones cifradas",
+      "cards": "Todas las tarjetas",
+      "safe": "Compra 100% segura",
+      "stripe": "Pagos con Stripe",
+      "guarantee": "Garantía de 7 días"
+    },
+    "faq": {
+      "eyebrow": "Preguntas, respondidas",
+      "title": "Preguntas frecuentes",
+      "items": [
+        {
+          "q": "¿Cómo funciona la facturación?",
+          "a": "El día de la compra pagas el precio de entrada del plan elegido. A menos que canceles, el plan se renueva automáticamente al precio indicado (más los impuestos aplicables) al final de cada período. El importe y la fecha de renovación siempre se muestran antes de que confirmes el pedido."
+        },
+        {
+          "q": "¿Cómo cancelo?",
+          "a": "Puedes cancelar cuando quieras desde los ajustes de tu cuenta — sin llamadas ni formularios. Al cancelar, el acceso continúa hasta el final del período ya pagado."
+        },
+        {
+          "q": "¿Cuál es la política de reembolso?",
+          "a": "Ofrecemos una garantía incondicional de 7 días en tu primer pedido. Si no te convence, solicita el reembolso y te devolvemos tu dinero."
+        },
+        {
+          "q": "¿Tengo que pagar para empezar?",
+          "a": "Creas tu cuenta gratis y solo eliges un plan cuando estés listo. No se cobra nada sin tu confirmación explícita."
+        },
+        {
+          "q": "¿Funciona en mi móvil?",
+          "a": "Sí. La app es una PWA y puede instalarse directamente en tu móvil, como una app nativa — en Android, iOS y también en el ordenador."
+        },
+        {
+          "q": "¿Es adecuado para mi nivel?",
+          "a": "Sí. Defines tus objetivos, nivel actual y preferencias durante el registro, y la experiencia se adapta a ti. No sustituimos el asesoramiento médico — consulta a tu médico antes de comenzar cualquier programa."
+        }
+      ]
+    },
+    "final": {
+      "title": "Empieza ahora, a tu ritmo",
+      "desc": "Registra hábitos, entrenamientos y comidas y sigue tu progreso cada día. Sin permanencia ni cuotas ocultas.",
+      "cta": "Ver planes y precios"
     },
     "footer": {
-      "rights": "© 2024 FitResults. Todos los derechos reservados.",
-      "links": {
-        "login": "Login",
-        "plans": "Planes",
-        "privacy": "Privacidad",
-        "terms": "Términos"
-      }
+      "navTitle": "Navegación",
+      "accountTitle": "Cuenta",
+      "legalTitle": "Legal",
+      "contact": "Contacto",
+      "terms": "Términos del Servicio",
+      "privacy": "Política de Privacidad",
+      "refund": "Política de Reembolso",
+      "rights": "Todos los derechos reservados."
     }
   },
   "checkout": {

@@ -152,105 +152,74 @@ export default function Reactivate() {
           }
         }
 
-        // 3. Load plans (same logic as Checkout)
-        const { data: plansData, error: plansError } = await (supabase as any)
-          .from("plans")
-          .select("*")
-          .eq("is_active", true)
-          .order("display_order", { ascending: true });
+        // 3. Load plans. Prices come from Stripe through `list-plans`, the same
+        // source the landing page and the checkout use, so a lapsed member is
+        // never quoted an amount that differs from what they get charged.
+        //
+        // This replaces a branch on `viewData`/`viewError`, which were never
+        // declared anywhere in the file. Reading them threw a ReferenceError on
+        // every visit, the catch below swallowed it, and the page rendered with
+        // no plans at all - so reactivation could not be completed.
+        const [{ data: stripePlans, error: stripeError }, { data: planContent }, { data: featuresData }] =
+          await Promise.all([
+            supabase.functions.invoke("list-plans"),
+            (supabase as any).from("plans").select("*").eq("is_active", true),
+            (supabase as any).from("plan_features").select("*, feature_flags:feature_key(*)").eq("enabled", true),
+          ]);
 
-        if (plansError) {
-          console.error("[Reactivate] Error loading plans:", plansError);
-          throw plansError;
+        if (stripeError) {
+          console.error("[Reactivate] Error loading Stripe plans:", stripeError);
+          throw stripeError;
         }
 
-        const { data: pricesData, error: pricesError } = await (supabase as any)
-          .from("plan_prices")
-          .select("*")
-          .eq("is_active", true);
-        if (viewError) {
-          console.error("[Reactivate] View loading error:", viewError);
-          // Modo legado se a view falhar
-          const { data: plansData } = await (supabase as any).from("plans").select("*").eq("is_active", true);
-          const { data: pricesData } = await (supabase as any).from("plan_prices").select("*").eq("is_active", true);
-          const { data: featuresData } = await (supabase as any).from("plan_features").select("*, feature_flags:feature_key(*)").eq("enabled", true);
+        const featuresForPlan = (planId: string): string[] =>
+          (featuresData || [])
+            .filter((f: any) => f.plan_id === planId)
+            .reduce((acc: string[], f: any) => {
+              const ff = Array.isArray(f.feature_flags) ? f.feature_flags[0] : f.feature_flags;
+              if (ff?.show_in_plans === false) return acc;
 
-          const legacyPlans = (plansData || []).map((plan: any) => {
-            const planPrices = (pricesData || []).filter((price: any) => price.plan_id === plan.id);
-            const planFeatures = (featuresData || [])
-              .filter((f: any) => f.plan_id === plan.id)
-              .reduce((acc: string[], f: any) => {
-                const ff = Array.isArray(f.feature_flags) ? f.feature_flags[0] : f.feature_flags;
-                if (ff?.show_in_plans === false) return acc;
+              let label = ff?.display_name;
+              if (language.startsWith('en')) label = ff?.display_name_en || label;
+              else if (language.startsWith('es')) label = ff?.display_name_es || label;
 
-                let label = ff?.display_name;
-                if (language.startsWith('en')) label = ff?.display_name_en || label;
-                else if (language.startsWith('es')) label = ff?.display_name_es || label;
+              acc.push(label || t(`plan.features.${f.feature_key}`) || f.feature_key);
+              return acc;
+            }, []);
 
-                acc.push(label || t(`plan.features.${f.feature_key}`) || f.feature_key);
-                return acc;
-              }, []);
+        const contentByPlanId = new Map<string, any>(
+          (planContent || []).map((p: any) => [p.id, p])
+        );
 
-            return { ...plan, features: planFeatures, prices: planPrices };
-          }).filter(p => p.prices.length > 0);
+        // One entry per billing period, matching what the pricing page offers.
+        const processedPlans = ((stripePlans?.plans || []) as any[]).map(price => {
+          const content = price.planId ? contentByPlanId.get(price.planId) : undefined;
 
-          setPlans(legacyPlans);
+          return {
+            id: price.planId,
+            name: price.label || price.productName || content?.name || "",
+            description: content?.description ?? null,
+            is_highlighted: false,
+            features: price.planId ? featuresForPlan(price.planId) : [],
+            prices: [{
+              id: price.priceId,
+              price_id: price.priceId,
+              display_price: price.amount,
+              display_currency: price.currency,
+              interval: price.interval,
+              label: price.label,
+              promo_text: null,
+            }],
+          };
+        });
 
-          // Auto-select highlighted plan or first plan
-          const highlightedPlan = legacyPlans.find((p: Plan) => p.is_highlighted);
-          const defaultPlan = highlightedPlan || legacyPlans[0];
+        setPlans(processedPlans);
 
-          if (defaultPlan) {
-            setSelectedPlan(defaultPlan);
-            if (defaultPlan.prices?.length > 0) {
-              setSelectedPriceId(defaultPlan.prices[0].price_id);
-            }
-          }
-
-        } else {
-          const processedPlans = (viewData || []).map((item: any) => {
-            const rawFeatures = item.feature_details || {};
-            const featuresList: string[] = [];
-
-            Object.entries(rawFeatures).forEach(([key, details]: [string, any]) => {
-              if (details.show_in_plans === false || !details.enabled) return;
-
-              let label = details.display_name;
-              if (language.startsWith('en')) label = details.display_name_en || label;
-              else if (language.startsWith('es')) label = details.display_name_es || label;
-
-              featuresList.push(label || t(`plan.features.${key}`) || key);
-            });
-
-            return {
-              id: item.plan_id, // Ensure plan ID is correctly mapped
-              name: item.plan_name,
-              description: item.plan_description,
-              is_highlighted: item.is_highlighted,
-              features: featuresList,
-              prices: [{
-                id: item.price_id, // Ensure price ID is correctly mapped
-                price_id: item.price_id,
-                display_price: item.display_price,
-                display_currency: item.display_currency,
-                interval: item.price_interval,
-                label: item.price_label,
-                promo_text: item.promo_text
-              }]
-            };
-          }).filter(p => p.prices.length > 0);
-
-          setPlans(processedPlans);
-
-          // Auto-select highlighted plan or first plan
-          const highlightedPlan = processedPlans.find((p: Plan) => p.is_highlighted);
-          const defaultPlan = highlightedPlan || processedPlans[0];
-
-          if (defaultPlan) {
-            setSelectedPlan(defaultPlan);
-            if (defaultPlan.prices?.length > 0) {
-              setSelectedPriceId(defaultPlan.prices[0].price_id);
-            }
+        const defaultPlan = processedPlans.find((p: Plan) => p.is_highlighted) || processedPlans[0];
+        if (defaultPlan) {
+          setSelectedPlan(defaultPlan);
+          if (defaultPlan.prices?.length > 0) {
+            setSelectedPriceId(defaultPlan.prices[0].price_id);
           }
         }
       } catch (error) {

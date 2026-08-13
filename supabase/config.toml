@@ -35,6 +35,11 @@ verify_jwt = true
 [functions.provision-from-quiz]
 verify_jwt = false
 
+# Public pricing. The landing page renders it for logged-out visitors, and the
+# response carries nothing that is not already visible on the checkout page.
+[functions.list-plans]
+verify_jwt = false
+
 [functions.create-checkout-session]
 verify_jwt = false
 

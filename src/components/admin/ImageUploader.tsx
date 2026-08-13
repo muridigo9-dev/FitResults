@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useStorageUpload, StorageBucket } from "@/hooks/useStorageUpload";
+import { isVideoUrl } from "@/lib/exerciseMedia";
 import {
   Popover,
   PopoverContent,
@@ -21,6 +22,8 @@ interface ImageUploaderProps {
   className?: string;
   aspectRatio?: "square" | "video" | "wide";
   placeholder?: string;
+  /** Also take video files. Only for buckets whose allowed_mime_types include them. */
+  allowVideo?: boolean;
 }
 
 /**
@@ -37,7 +40,11 @@ export function ImageUploader({
   className,
   aspectRatio = "video",
   placeholder = "Adicionar imagem",
+  allowVideo = false,
 }: ImageUploaderProps) {
+  const acceptedTypes = allowVideo
+    ? "image/*,video/mp4,video/webm,video/quicktime"
+    : "image/*";
   const [isDragging, setIsDragging] = useState(false);
   const [previewError, setPreviewError] = useState(false);
   const [urlInput, setUrlInput] = useState("");
@@ -102,7 +109,8 @@ export function ImageUploader({
     setIsDragging(false);
     if (disabled || isUploading) return;
     const file = e.dataTransfer.files?.[0];
-    if (file && file.type.startsWith("image/")) handleFileSelect(file);
+    const isAccepted = file?.type.startsWith("image/") || (allowVideo && file?.type.startsWith("video/"));
+    if (file && isAccepted) handleFileSelect(file);
   };
 
   // --- Render ---
@@ -112,12 +120,24 @@ export function ImageUploader({
       <div className={cn("group relative rounded-lg overflow-hidden border bg-muted/30 shadow-sm transition-all animate-in fade-in zoom-in-95", className)}>
         {/* Preview Image - Constrained Height */}
         <div className={cn("w-full relative", aspectRatioClass, "max-h-[300px]")}>
-          <img
-            src={previewUrl}
-            alt="Preview"
-            className="w-full h-full object-cover"
-            onError={() => setPreviewError(true)}
-          />
+          {isVideoUrl(previewUrl) ? (
+            <video
+              src={previewUrl}
+              className="w-full h-full object-cover"
+              autoPlay
+              loop
+              muted
+              playsInline
+              onError={() => setPreviewError(true)}
+            />
+          ) : (
+            <img
+              src={previewUrl}
+              alt="Preview"
+              className="w-full h-full object-cover"
+              onError={() => setPreviewError(true)}
+            />
+          )}
 
           {/* Overlay Controls */}
           {!disabled && (
@@ -175,7 +195,7 @@ export function ImageUploader({
             </div>
           )}
         </div>
-        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleInputChange} />
+        <input ref={fileInputRef} type="file" accept={acceptedTypes} className="hidden" onChange={handleInputChange} />
       </div>
     );
   }
@@ -244,7 +264,7 @@ export function ImageUploader({
           </Popover>
         )}
 
-        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleInputChange} />
+        <input ref={fileInputRef} type="file" accept={acceptedTypes} className="hidden" onChange={handleInputChange} />
       </div>
 
       {previewError && (

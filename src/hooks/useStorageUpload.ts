@@ -65,8 +65,13 @@ export function useStorageUpload(): UseStorageUploadReturn {
 
       // Validate file type (Post-optimization check)
       // Note: Optimizer converts to WebP, so checking original types might flag it if we don't allow WebP,
-      // but validTypes includes webp.
-      const validTypes = ["image/png", "image/jpeg", "image/webp", "image/gif", "image/svg+xml"];
+      // but validTypes includes webp. Video is passed through untouched by the pipeline; whether a given
+      // bucket actually accepts it is enforced server-side by its allowed_mime_types, so listing the
+      // types here does not let a video land in an image-only bucket.
+      const validTypes = [
+        "image/png", "image/jpeg", "image/webp", "image/gif", "image/svg+xml",
+        "video/mp4", "video/webm", "video/quicktime",
+      ];
       if (!validTypes.includes(file.type)) {
         throw new Error("Tipo de arquivo não suportado após processamento.");
       }

@@ -250,7 +250,8 @@ export function ExerciseForm({
                                 Imagem ou GIF (Upload ou Link)
                             </Label>
                             <p className="text-xs text-muted-foreground">
-                                Dica: GIFs são excelentes para mostrar a mecânica do movimento.
+                                Dica: prefira MP4 a GIF. Mesma qualidade com um arquivo muito menor,
+                                e o app o reproduz em loop silencioso, igual a um GIF.
                             </p>
                         </div>
 
@@ -262,7 +263,8 @@ export function ExerciseForm({
                                 currentImagePath={imagePath}
                                 onImageChange={handleImageChange}
                                 aspectRatio="video"
-                                placeholder="Solte aqui o GIF de execução do exercício"
+                                allowVideo
+                                placeholder="Solte aqui o GIF ou MP4 de execução do exercício"
                             />
                         </div>
                     </div>

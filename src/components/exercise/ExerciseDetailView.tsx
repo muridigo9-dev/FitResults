@@ -46,14 +46,14 @@ export function ExerciseDetailView({
             <div className="flex flex-col min-h-full">
                 <div className="w-full max-w-xl mx-auto flex flex-col p-4 sm:p-6 pb-40">
                     {/* Media Area - Matches successful patterns */}
-                    <div className="aspect-video w-full rounded-2xl overflow-hidden bg-muted relative mb-6 shadow-sm border border-border/50 shrink-0 flex items-center justify-center">
+                    <div className="w-fit max-w-full mx-auto rounded-2xl overflow-hidden bg-muted relative mb-6 shadow-sm border border-border/50 shrink-0 flex items-center justify-center">
                         <ExerciseMedia
                             exercise={exercise}
                             isActive={isActive}
                             loading="eager"
-                            className="w-full h-full object-contain"
+                            className="max-h-[45vh] w-auto max-w-full object-contain"
                             fallback={
-                                <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground p-8">
+                                <div className="min-w-[220px] min-h-[180px] flex flex-col items-center justify-center text-muted-foreground p-8">
                                     <Dumbbell className="h-8 w-8 text-muted-foreground/30 mb-2" />
                                 </div>
                             }

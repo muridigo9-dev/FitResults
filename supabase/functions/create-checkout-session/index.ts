@@ -56,7 +56,25 @@ Deno.serve(async (req) => {
     }
 
     // Se o plan_id não for um UUID válido, passamos null (vital para o Postgres)
-    const valid_plan_id = (priceData?.plan_id && priceData.plan_id.length === 36) ? priceData.plan_id : null;
+    let valid_plan_id = (priceData?.plan_id && priceData.plan_id.length === 36) ? priceData.plan_id : null;
+
+    // Prices live in Stripe now, so `plan_prices` may hold no row for this
+    // price. The subscription still has to name the plan it grants - that
+    // metadata is what stripe-webhook reads when provisioning - so fall back
+    // to the single paid plan. Left null when the shape is ambiguous rather
+    // than guessing between tiers.
+    if (!valid_plan_id) {
+      const { data: paidPlans } = await supabaseAdmin
+        .from("plans")
+        .select("id")
+        .eq("is_active", true)
+        .eq("is_default", false)
+        .order("display_order");
+
+      if (paidPlans?.length === 1) valid_plan_id = paidPlans[0].id;
+      else console.warn("Cannot infer plan_id: found", paidPlans?.length ?? 0, "paid plans");
+    }
+
     console.log("Plan ID resolved:", valid_plan_id);
 
     const sessionParams: any = {

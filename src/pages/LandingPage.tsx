@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dumbbell,
@@ -60,73 +59,62 @@ type LandingPrice = {
   popular: boolean;
 };
 
-type PlanRow = { id: string; name: string; is_default: boolean | null };
-
-type PlanPriceRow = {
-  plan_id: string;
-  price_id: string;
-  interval: string | null;
+type ListPlansRow = {
+  priceId: string;
+  amount: number;
+  currency: string;
+  interval: string;
+  intervalCount: number;
   label: string | null;
-  display_price: number | string | null;
-  display_currency: string | null;
-  promo_text: string | null;
 };
-
-/**
- * `plans` and `plan_prices` are not in the generated Database types yet, so the
- * client is widened here instead of sprinkling `any` at every call site. The
- * rows are given explicit shapes above so the mapping below stays checked.
- */
-const db = supabase as unknown as SupabaseClient;
 
 /**
  * Billing options shown on the pricing section.
  *
- * Reads `plans` + `plan_prices`, the same pair Checkout reads, so the page can
- * never advertise a price the checkout would not charge. Checkout collapses
- * each plan to a single price because it lists one card per plan; here we want
- * one card per billing period, so every active price of every paid plan is
- * listed instead.
+ * Comes from the `list-plans` function, which reads Stripe directly. Prices
+ * used to be mirrored into `plan_prices`, and that copy is exactly how the page
+ * ended up advertising R$ 29,90 against a USD 4.99 charge. Stripe is now the
+ * only place a price is defined.
  */
 function useLandingPrices() {
   return useQuery({
     queryKey: ["landing-prices"],
     staleTime: 5 * 60 * 1000,
+    retry: 1,
     queryFn: async (): Promise<LandingPrice[]> => {
-      const [{ data: plansData }, { data: pricesData }] = await Promise.all([
-        db.from("plans").select("*").eq("is_active", true).order("display_order"),
-        db.from("plan_prices").select("*").eq("is_active", true),
-      ]);
+      const { data, error } = await supabase.functions.invoke("list-plans");
+      if (error) throw error;
 
-      const plans = (plansData ?? []) as PlanRow[];
-      const prices = (pricesData ?? []) as PlanPriceRow[];
+      const rows: LandingPrice[] = ((data?.plans ?? []) as ListPlansRow[]).map(p => ({
+        priceId: p.priceId,
+        // Stripe's price nickname is an explicit override when set; leaving it
+        // empty lets the card name follow the interface language.
+        name: p.label ?? null,
+        interval: normaliseInterval(p.interval, p.intervalCount),
+        amount: p.amount,
+        currency: p.currency,
+        promo: null,
+        popular: false,
+      }));
 
-      // `is_default` marks the free tier - it has nothing to sell here.
-      const paid = plans.filter(p => !p.is_default);
-
-      const rows: LandingPrice[] = [];
-      for (const plan of paid) {
-        for (const price of prices.filter(p => p.plan_id === plan.id)) {
-          rows.push({
-            priceId: price.price_id,
-            // `label` is an explicit admin override and wins when set; leaving
-            // it null lets the card name follow the interface language.
-            name: price.label ?? null,
-            interval: String(price.interval || "month"),
-            amount: Number(price.display_price),
-            currency: price.display_currency || "USD",
-            promo: price.promo_text ?? null,
-            popular: false,
-          });
-        }
-      }
-
-      rows.sort((a, b) => a.amount - b.amount);
       // Middle option carries the badge, which is where the eye lands first.
       if (rows.length === 3) rows[1].popular = true;
       return rows;
     },
   });
+}
+
+/**
+ * Stripe models "every 3 months" as interval=month with interval_count=3.
+ * Collapse that into the single token the copy keys are written against.
+ */
+function normaliseInterval(interval: string, count: number): string {
+  if (interval === "year") return "year";
+  if (interval === "month" && count === 12) return "year";
+  if (interval === "month" && count === 6) return "semester";
+  if (interval === "month" && count === 3) return "quarter";
+  if (interval === "week" && count === 4) return "month";
+  return interval;
 }
 
 export default function LandingPage() {

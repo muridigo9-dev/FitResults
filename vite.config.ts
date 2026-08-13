@@ -70,6 +70,8 @@ export default defineConfig(({ mode }) => ({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+        // Social preview card is only ever fetched by link crawlers, never by the app
+        globIgnores: ["**/og-image.png"],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB
         runtimeCaching: [
           {

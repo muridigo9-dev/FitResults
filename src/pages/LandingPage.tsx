@@ -162,11 +162,26 @@ export default function LandingPage() {
     return t("landing.plans.renewMonth", { price: formatted });
   };
 
-  const steps: Array<{ title: string; desc: string }> = t("landing.how.steps") || [];
-  const includedItems: string[] = t("landing.included.items") || [];
-  const members: Array<{ initials: string; name: string; role: string; text: string }> =
-    t("landing.members.items") || [];
-  const faqs: Array<{ q: string; a: string }> = t("landing.faq.items") || [];
+  /**
+   * Lists out of i18n.
+   *
+   * `t()` stringifies whatever it finds unless `returnObjects` is set, so
+   * asking for a list without it hands back "[object Object],[object Object]"
+   * and the `.map()` further down throws — which unmounts the tree and leaves
+   * the visitor a blank page. The `Array.isArray` guard means a key that goes
+   * missing costs one empty section instead of the whole landing page.
+   */
+  const list = <T,>(key: string): T[] => {
+    const value = t(key, { returnObjects: true });
+    return Array.isArray(value) ? (value as T[]) : [];
+  };
+
+  const steps = list<{ title: string; desc: string }>("landing.how.steps");
+  const includedItems = list<string>("landing.included.items");
+  const members = list<{ initials: string; name: string; role: string; text: string }>(
+    "landing.members.items"
+  );
+  const faqs = list<{ q: string; a: string }>("landing.faq.items");
 
   const heroRows = [
     { icon: Droplets, label: t("landing.preview.water"), value: "1,8 L", pct: 72 },

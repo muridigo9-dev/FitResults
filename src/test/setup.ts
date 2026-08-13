@@ -40,6 +40,25 @@ Object.defineProperty(window, "matchMedia", {
 // Mock scrollTo
 window.scrollTo = vi.fn();
 
+// Storage, which jsdom does not expose here. The app reads the language
+// preference out of localStorage on first render, so without this any test
+// that mounts a page through LanguageProvider dies before it renders.
+if (typeof window.localStorage === "undefined") {
+  const store = new Map<string, string>();
+  const storage: Storage = {
+    get length() {
+      return store.size;
+    },
+    key: (i: number) => [...store.keys()][i] ?? null,
+    getItem: (k: string) => store.get(k) ?? null,
+    setItem: (k: string, v: string) => void store.set(k, String(v)),
+    removeItem: (k: string) => void store.delete(k),
+    clear: () => store.clear(),
+  };
+  Object.defineProperty(window, "localStorage", { value: storage, writable: true });
+  Object.defineProperty(globalThis, "localStorage", { value: storage, writable: true });
+}
+
 // Mock crypto.randomUUID
 Object.defineProperty(globalThis, "crypto", {
   value: {

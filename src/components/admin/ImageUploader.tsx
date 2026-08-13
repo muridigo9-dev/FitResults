@@ -139,10 +139,19 @@ export function ImageUploader({
             />
           )}
 
-          {/* Overlay Controls */}
+          {/* Overlay Controls.
+              Every button here is explicitly type="button". This uploader is
+              always rendered inside a <form> (ExerciseForm, WorkoutForm,
+              DishForm, DietPlanForm, ChallengeForm, TaxonomyForm,
+              StudentDishForm), and a <button> with no type defaults to
+              "submit" — so Trocar/URL/Remover were submitting the form and
+              saving the record with its *old* image before the handler's
+              await had resolved. Note that stopPropagation does not help:
+              submitting is the button's default action, not a bubbled event. */}
           {!disabled && (
             <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 backdrop-blur-[2px]">
               <Button
+                type="button"
                 variant="secondary"
                 size="sm"
                 className="h-8 gap-2"
@@ -155,7 +164,7 @@ export function ImageUploader({
 
               <Popover open={isUrlPopoverOpen} onOpenChange={setIsUrlPopoverOpen}>
                 <PopoverTrigger asChild>
-                  <Button variant="secondary" size="sm" className="h-8 gap-2" disabled={isUploading} onClick={(e) => e.stopPropagation()}>
+                  <Button type="button" variant="secondary" size="sm" className="h-8 gap-2" disabled={isUploading} onClick={(e) => e.stopPropagation()}>
                     <LinkIcon className="h-3.5 w-3.5" />
                     URL
                   </Button>
@@ -169,12 +178,13 @@ export function ImageUploader({
                       onChange={e => setUrlInput(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handleUrlSubmit()}
                     />
-                    <Button size="sm" className="h-8 px-3" onClick={handleUrlSubmit}>OK</Button>
+                    <Button type="button" size="sm" className="h-8 px-3" onClick={handleUrlSubmit}>OK</Button>
                   </div>
                 </PopoverContent>
               </Popover>
 
               <Button
+                type="button"
                 variant="destructive"
                 size="sm"
                 className="h-8 gap-2"
@@ -241,6 +251,7 @@ export function ImageUploader({
           <Popover open={isUrlPopoverOpen} onOpenChange={setIsUrlPopoverOpen}>
             <PopoverTrigger asChild>
               <Button
+                type="button"
                 variant="ghost"
                 size="sm"
                 className="absolute bottom-2 right-2 h-6 px-2 text-[10px] text-muted-foreground hover:text-foreground z-10"
@@ -258,7 +269,7 @@ export function ImageUploader({
                   value={urlInput}
                   onChange={e => setUrlInput(e.target.value)}
                 />
-                <Button size="sm" className="h-8 px-3" onClick={handleUrlSubmit}>OK</Button>
+                <Button type="button" size="sm" className="h-8 px-3" onClick={handleUrlSubmit}>OK</Button>
               </div>
             </PopoverContent>
           </Popover>

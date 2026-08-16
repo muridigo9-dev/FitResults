@@ -72,7 +72,10 @@ export function ExerciseMedia({
          * playback and looping start where the clip does. The fragment is only
          * appended when the URL has no hash of its own.
          */
-        const shouldSeek = !isActive && !controls && !src.includes("#");
+        // Applies to the controls case too: without it the panel shows a black
+        // rectangle until the reader presses play. 0.1s in is imperceptible as
+        // a starting point and the scrubber still reaches the whole clip.
+        const shouldSeek = !isActive && !src.includes("#");
         const videoSrc = shouldSeek ? `${src}#t=0.1` : src;
 
         return (

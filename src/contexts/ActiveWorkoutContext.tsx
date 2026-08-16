@@ -34,17 +34,26 @@ export function ActiveWorkoutProvider({ children }: { children: ReactNode }) {
     const { data: activeSession, isLoading } = useActiveSession();
     const navigate = useNavigate();
     const { toast } = useToast();
+    const queryClient = useQueryClient();
 
     // We initialize the hook with the active session ID so we can control it (cancel, etc)
     // startSession doesn't need ID, so it works too.
     const { startSession, abandonSession } = useWorkoutSession(activeSession?.id);
 
+    /**
+     * Starting a workout no longer takes the student anywhere.
+     *
+     * It used to push them onto a separate execution screen full of weight and
+     * set fields, which is the wrong tool for a mind-body practice and a wall
+     * for the older students this app is built for. The session now begins
+     * under the workout they are already looking at, and the page they are on
+     * turns into the player.
+     */
     const handleStartWorkout = async (workoutId: string, seriesId?: string, isUserWorkout: boolean = false) => {
         // 1. Check if there is already an active session
         if (activeSession) {
-            // If same workout, just resume
+            // If same workout, the caller is already on it - hand back the id
             if (activeSession.workout_id === workoutId) {
-                navigate(`/workout-execution/${activeSession.id}`);
                 return activeSession.id;
             }
 
@@ -60,7 +69,9 @@ export function ActiveWorkoutProvider({ children }: { children: ReactNode }) {
         try {
             const sessionId = await startSession({ workoutId, seriesId, isUserWorkout });
             if (sessionId) {
-                navigate(`/workout-execution/${sessionId}`);
+                // Make the new session visible to the page that asked for it
+                // before it renders its first "Next".
+                await queryClient.invalidateQueries({ queryKey: ["active-workout-session"] });
                 return sessionId;
             }
             return null;
@@ -69,8 +80,6 @@ export function ActiveWorkoutProvider({ children }: { children: ReactNode }) {
             return null;
         }
     };
-
-    const queryClient = useQueryClient();
 
     const handleCancelWorkout = async () => {
         if (!activeSession) return;
@@ -87,9 +96,11 @@ export function ActiveWorkoutProvider({ children }: { children: ReactNode }) {
         }
     };
 
+    // Resuming means going back to the workout, which is where the player now
+    // lives - it picks up on the first exercise that is not done yet.
     const handleResumeWorkout = () => {
-        if (activeSession) {
-            navigate(`/workout-execution/${activeSession.id}`);
+        if (activeSession?.workout_id) {
+            navigate(`/workouts/${activeSession.workout_id}`);
         }
     };
 

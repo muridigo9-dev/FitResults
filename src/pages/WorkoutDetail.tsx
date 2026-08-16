@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Play, Info, Check, Dumbbell, Timer, Zap, Flame, ChevronRight, X, VideoOff } from "lucide-react";
+import { ArrowLeft, Play, Info, Check, Dumbbell, Timer, Zap, Flame, ChevronRight, X, VideoOff, ArrowRight, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +8,8 @@ import { useDiary } from "@/contexts/DiaryContext";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useWorkouts } from "@/hooks/useWorkouts";
 import { useActiveWorkout } from "@/contexts/ActiveWorkoutContext";
+import { useWorkoutSession } from "@/hooks/useWorkoutSession";
+import { useConfetti } from "@/hooks/useConfetti";
 import { AnimatedLoader, EmptyState } from "@/components/loaders";
 import { EmptyStateReason } from "@/components/states/EmptyStateReason";
 import { cn } from "@/lib/utils";
@@ -55,10 +57,41 @@ export default function WorkoutDetail() {
 
   // Use Context instead of direct hooks
   const { startWorkout, cancelWorkout, activeSession } = useActiveWorkout();
+  const { fireConfetti } = useConfetti();
   const [isStarting, setIsStarting] = useState(false);
   const [showConflictDialog, setShowConflictDialog] = useState(false);
+  const [showFinishDialog, setShowFinishDialog] = useState(false);
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [carouselApi, setCarouselApi] = useState<CarouselApi>();
+
+  const hasActiveSession = activeSession?.workout_id === id;
+  const sessionId = hasActiveSession ? activeSession?.id : undefined;
+
+  const {
+    session,
+    startExercise,
+    completeSetAsync,
+    completeExerciseAsync,
+    completeSessionAsync,
+  } = useWorkoutSession(sessionId);
+
+  /** True once the student has pressed Start and the session is loaded. */
+  const isRunning = !!sessionId && !!session;
+  /** The gap between pressing Start and the session arriving, so the button
+   *  never flickers back to "Start workout" under someone's finger. */
+  const isPreparing = isStarting || (!!sessionId && !session);
+
+  /**
+   * The stopwatch that replaces the old form.
+   *
+   * Nobody is asked for sets, reps or a load. The one number worth having is
+   * how long the movement actually took, and the app can watch that itself.
+   */
+  const exerciseStartedAtRef = useRef<number>(Date.now());
+  const [exerciseSeconds, setExerciseSeconds] = useState(0);
+  const [isAdvancing, setIsAdvancing] = useState(false);
+  const [summary, setSummary] = useState<{ minutes: number; exercises: number } | null>(null);
+  const hasAlignedRef = useRef(false);
 
   // Move hooks before conditional returns
   useEffect(() => {
@@ -68,12 +101,51 @@ export default function WorkoutDetail() {
     });
   }, [carouselApi]);
 
+  // Picking a workout back up lands on the first movement still to do, rather
+  // than making anyone swipe past the ones they already finished.
+  useEffect(() => {
+    if (!isRunning || !carouselApi || hasAlignedRef.current) return;
+    hasAlignedRef.current = true;
+    const firstUnfinished = session.exercises.findIndex(e => !e.isCompleted);
+    if (firstUnfinished > 0) carouselApi.scrollTo(firstUnfinished);
+  }, [isRunning, carouselApi, session]);
+
+  // Restart the stopwatch on every movement the student arrives at, and record
+  // the arrival so the finished session knows how long each one took.
+  // Deliberately not keyed on `session`: a background refetch must not reset
+  // the clock under someone mid-movement.
+  useEffect(() => {
+    if (!isRunning) return;
+    exerciseStartedAtRef.current = Date.now();
+    setExerciseSeconds(0);
+
+    const sessionExercise = session.exercises[currentSlideIndex];
+    if (sessionExercise && !sessionExercise.isCompleted) {
+      startExercise(sessionExercise.id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isRunning, currentSlideIndex]);
+
+  useEffect(() => {
+    if (!isRunning) return;
+    const interval = setInterval(() => {
+      setExerciseSeconds(Math.floor((Date.now() - exerciseStartedAtRef.current) / 1000));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isRunning]);
+
   const workout = allWorkouts.find(w => w.id === id);
   const isLogged = workout ? isWorkoutLogged(workout.id) : false;
-  const hasActiveSession = activeSession?.workout_id === id;
 
   const scrollToSlide = (index: number) => {
     carouselApi?.scrollTo(index);
+  };
+
+
+  const formatClock = (totalSeconds: number) => {
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
   // Loading state (AFTER hooks)
@@ -140,6 +212,25 @@ export default function WorkoutDetail() {
     }
   });
 
+  /**
+   * The session row behind the slide at `index`.
+   *
+   * `start_workout_session` walks the workout in exercise_order, so the two
+   * lists line up position for position. The identity check is a seatbelt for
+   * the case where a workout was edited after the session began: rather than
+   * ticking off the wrong movement, fall back to an unfinished copy of the one
+   * actually on screen.
+   */
+  const sessionExerciseAt = (index: number) => {
+    if (!session) return undefined;
+
+    const byPosition = session.exercises[index];
+    const libraryId = (flatExercises[index] as { exercise_id?: string } | undefined)?.exercise_id;
+    if (!byPosition || !libraryId || byPosition.exerciseId === libraryId) return byPosition;
+
+    return session.exercises.find(e => e.exerciseId === libraryId && !e.isCompleted) ?? byPosition;
+  };
+
   const handleStartWorkout = async () => {
     if (!workout) return;
 
@@ -171,6 +262,78 @@ export default function WorkoutDetail() {
       console.error("Error switching workout:", error);
     } finally {
       setIsStarting(false);
+    }
+  };
+
+  /**
+   * Closes the session and shows the only screen that follows a workout: a
+   * well done, and what it cost. No mood pickers, no star ratings.
+   */
+  const finishSession = async (justCompleted: number) => {
+    if (!session) return;
+    const startedAt = new Date(session.startedAt).getTime();
+    const minutes = Math.max(1, Math.round((Date.now() - startedAt) / 60000));
+    const exercises = session.exercises.filter(e => e.isCompleted).length + justCompleted;
+
+    await completeSessionAsync({});
+    setSummary({ minutes, exercises });
+    fireConfetti();
+  };
+
+  /**
+   * The whole interaction: one button, pressed when the movement is done.
+   *
+   * It fills in the record from what it observed - the seconds spent on a
+   * timed movement, the prescribed count otherwise - marks the exercise off
+   * and slides to the next one.
+   */
+  const handleNext = async () => {
+    if (!session || isAdvancing) return;
+
+    const sessionExercise = sessionExerciseAt(currentSlideIndex);
+    const exercise = flatExercises[currentSlideIndex];
+    if (!sessionExercise) return;
+
+    const isLast = currentSlideIndex >= flatExercises.length - 1;
+    let justCompleted = 0;
+
+    setIsAdvancing(true);
+    try {
+      if (!sessionExercise.isCompleted) {
+        const seconds = Math.max(1, Math.round((Date.now() - exerciseStartedAtRef.current) / 1000));
+        await completeSetAsync({
+          sessionExerciseId: sessionExercise.id,
+          setNumber: 1,
+          actualReps: exercise?.executionType === 'time'
+            ? seconds
+            : parseInt(String(exercise?.reps ?? "")) || undefined,
+          actualWeightKg: 0,
+        });
+        await completeExerciseAsync({ sessionExerciseId: sessionExercise.id });
+        justCompleted = 1;
+      }
+
+      if (isLast) {
+        await finishSession(justCompleted);
+      } else {
+        carouselApi?.scrollTo(currentSlideIndex + 1);
+      }
+    } catch (error) {
+      console.error("Error advancing workout:", error);
+    } finally {
+      setIsAdvancing(false);
+    }
+  };
+
+  const handleFinishEarly = async () => {
+    setShowFinishDialog(false);
+    setIsAdvancing(true);
+    try {
+      await finishSession(0);
+    } catch (error) {
+      console.error("Error finishing workout:", error);
+    } finally {
+      setIsAdvancing(false);
     }
   };
 
@@ -211,6 +374,56 @@ export default function WorkoutDetail() {
 
   const duration = estimateDuration(workout.exercises.length);
 
+  // The end of a workout: a congratulation and two numbers, nothing to fill in.
+  if (summary) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[100dvh] bg-background p-6 text-center">
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: "spring", duration: 0.6 }}
+          className="flex flex-col items-center gap-6 max-w-sm w-full"
+        >
+          <div className="h-24 w-24 rounded-full bg-green-500/10 flex items-center justify-center">
+            <Trophy className="h-12 w-12 text-green-500" />
+          </div>
+
+          <div>
+            <h1 className="text-3xl font-bold mb-2">{t("execution.workoutComplete")}</h1>
+            <p className="text-muted-foreground">{workout.title}</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 w-full">
+            <Card className="bg-muted/30">
+              <CardContent className="p-4 text-center">
+                <div className="text-3xl font-bold">{summary.minutes}</div>
+                <div className="text-xs uppercase text-muted-foreground font-bold tracking-wider">
+                  {t("units.minutes")}
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="bg-muted/30">
+              <CardContent className="p-4 text-center">
+                <div className="text-3xl font-bold">{summary.exercises}</div>
+                <div className="text-xs uppercase text-muted-foreground font-bold tracking-wider">
+                  {t("workouts.exercises")}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Button
+            size="lg"
+            className="w-full h-16 text-lg"
+            onClick={() => navigate("/workouts")}
+          >
+            {t("workouts.backToWorkouts")}
+          </Button>
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-[100dvh] bg-background">
 
@@ -244,6 +457,7 @@ export default function WorkoutDetail() {
                 {group.exercises.map((ex) => {
                   const globalIndex = flatExercises.findIndex(e => e.id === ex.id);
                   const isCurrent = globalIndex === currentSlideIndex;
+                  const isDone = !!sessionExerciseAt(globalIndex)?.isCompleted;
 
                   return (
                     <button
@@ -258,6 +472,12 @@ export default function WorkoutDetail() {
                         exercise={ex}
                         className="w-full h-full object-cover"
                       />
+                      {/* Done movements read at a glance, without counting */}
+                      {isDone && (
+                        <div className="absolute inset-0 bg-green-500/70 flex items-center justify-center">
+                          <Check className="h-6 w-6 text-white" strokeWidth={3} />
+                        </div>
+                      )}
                       {isCurrent && (
                         <motion.div layoutId="highlight" className="absolute inset-0 ring-2 ring-primary rounded-lg" />
                       )}
@@ -365,16 +585,21 @@ export default function WorkoutDetail() {
                     {/* Metrics Grid */}
                     {(() => {
                       const hasNextInSuperset = exercise.supersetId && workout.exercises[index + 1]?.supersetId === exercise.supersetId;
+                      // "1 SETS" is a tile that tells a student nothing. Show
+                      // the count only when there is actually a count to keep.
+                      const showSets = (exercise.sets ?? 0) > 1;
 
                       return (
-                        <div className="grid grid-cols-3 gap-3">
-                          <Card className="bg-muted/30 border-dashed">
-                            <CardContent className="p-3 text-center">
-                              <div className="text-primary mb-1 flex justify-center"><Zap className="w-5 h-5" /></div>
-                              <div className="text-xl font-bold">{exercise.sets}</div>
-                              <div className="text-[10px] uppercase text-muted-foreground font-bold tracking-wider">{t("workouts.series")}</div>
-                            </CardContent>
-                          </Card>
+                        <div className={cn("grid gap-3", showSets ? "grid-cols-3" : "grid-cols-2")}>
+                          {showSets && (
+                            <Card className="bg-muted/30 border-dashed">
+                              <CardContent className="p-3 text-center">
+                                <div className="text-primary mb-1 flex justify-center"><Zap className="w-5 h-5" /></div>
+                                <div className="text-xl font-bold">{exercise.sets}</div>
+                                <div className="text-[10px] uppercase text-muted-foreground font-bold tracking-wider">{t("workouts.series")}</div>
+                              </CardContent>
+                            </Card>
+                          )}
                           <Card className="bg-muted/30 border-dashed">
                             <CardContent className="p-3 text-center">
                               <div className="text-primary mb-1 flex justify-center">
@@ -429,36 +654,110 @@ export default function WorkoutDetail() {
       </div>
 
 
-      {/* 3. FOOTER (Action) */}
-      <div className="flex-none p-4 bg-background border-t border-border/50 backdrop-blur-lg safe-area-bottom">
-        <div className="flex items-center justify-between gap-4 max-w-xl mx-auto w-full">
-          <div className="hidden md:block">
-            <p className="text-sm font-medium">{workout.title}</p>
-            <p className="text-xs text-muted-foreground">{duration} {t("units.minutes")} • {workout.exercises.length} {t("workouts.exercises").toLowerCase()}</p>
-          </div>
+      {/* 3. FOOTER (Action)
 
-          <Button
-            size="lg"
-            className={cn("w-full h-14 text-lg shadow-lg shadow-primary/20", hasActiveSession ? "bg-orange-500 hover:bg-orange-600" : "")}
-            onClick={handleStartWorkout}
-            disabled={isStarting}
-          >
-            {isStarting ? (
-              <AnimatedLoader type="default" size="sm" />
-            ) : hasActiveSession ? (
-              <>
-                <Play className="w-6 h-6 mr-2" />
-                {t("workouts.continueWorkout")}
-              </>
-            ) : (
-              <>
-                <Play className="w-6 h-6 mr-2" />
-                <span className="uppercase">{t("workouts.startWorkout")}</span>
-              </>
-            )}
-          </Button>
+          Before the workout starts this is a single Start button. Once it is
+          running the same button becomes Next: press it when the movement is
+          done and it records the time, ticks the exercise off and slides to the
+          next one. That is the entire interaction. */}
+      <div className="flex-none p-4 bg-background border-t border-border/50 backdrop-blur-lg safe-area-bottom">
+        <div className="max-w-xl mx-auto w-full space-y-3">
+          {/* `isAdvancing` keeps this side up while the session closes: ending a
+              workout clears the active session, and without it the footer would
+              flip back to "Start workout" for a beat under someone's finger. */}
+          {isRunning || isAdvancing ? (
+            <>
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Timer className="w-4 h-4 text-primary" />
+                  <span className="font-mono font-medium tabular-nums text-foreground">
+                    {formatClock(exerciseSeconds)}
+                  </span>
+                  <span>
+                    • {currentSlideIndex + 1}/{flatExercises.length}
+                  </span>
+                </div>
+
+                {/* Only offered mid-workout: on the last movement the primary
+                    button already ends the session, and two near-identical
+                    words for "finish" is exactly the confusion to avoid. */}
+                {currentSlideIndex < flatExercises.length - 1 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted-foreground"
+                    onClick={() => setShowFinishDialog(true)}
+                    disabled={isAdvancing}
+                  >
+                    {t("execution.end")}
+                  </Button>
+                )}
+              </div>
+
+              <Button
+                size="lg"
+                className="w-full h-16 text-xl shadow-lg shadow-primary/20"
+                onClick={handleNext}
+                disabled={isAdvancing}
+              >
+                {isAdvancing ? (
+                  <AnimatedLoader type="default" size="sm" />
+                ) : currentSlideIndex >= flatExercises.length - 1 ? (
+                  <>
+                    <Check className="w-7 h-7 mr-2" />
+                    {t("execution.finish")}
+                  </>
+                ) : (
+                  <>
+                    {t("execution.next")}
+                    <ArrowRight className="w-7 h-7 ml-2" />
+                  </>
+                )}
+              </Button>
+            </>
+          ) : (
+            <div className="flex items-center justify-between gap-4">
+              <div className="hidden md:block">
+                <p className="text-sm font-medium">{workout.title}</p>
+                <p className="text-xs text-muted-foreground">{duration} {t("units.minutes")} • {workout.exercises.length} {t("workouts.exercises").toLowerCase()}</p>
+              </div>
+
+              <Button
+                size="lg"
+                className="w-full h-16 text-xl shadow-lg shadow-primary/20"
+                onClick={handleStartWorkout}
+                disabled={isPreparing}
+              >
+                {isPreparing ? (
+                  <AnimatedLoader type="default" size="sm" />
+                ) : (
+                  <>
+                    <Play className="w-7 h-7 mr-2" />
+                    <span className="uppercase">{t("workouts.startWorkout")}</span>
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
         </div>
       </div>
+
+      <AlertDialog open={showFinishDialog} onOpenChange={setShowFinishDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("execution.incompleteTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("execution.incompleteDescription")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("execution.keepTraining")}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleFinishEarly}>
+              {t("execution.finishAnyway")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={showConflictDialog} onOpenChange={setShowConflictDialog}>
         <AlertDialogContent>

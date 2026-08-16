@@ -225,7 +225,7 @@ export default function Workouts() {
       {/* Active Session Floater */}
       {activeSession && (
         <div className="mb-8 sticky top-4 z-30 animate-in slide-in-from-top-4 fade-in duration-500">
-          <Link to={`/workout-execution/${activeSession.id}`}>
+          <Link to={`/workouts/${activeSession.workout_id}`}>
             <div className="bg-primary text-primary-foreground p-4 rounded-2xl shadow-xl shadow-primary/20 flex items-center justify-between ring-2 ring-white/20 border border-white/10 relative overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent animate-pulse" />
               <div className="relative z-10 flex flex-col">

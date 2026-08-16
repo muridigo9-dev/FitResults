@@ -158,9 +158,11 @@ export default function WorkoutExecution() {
     rating?: number;
     comment?: string;
   }) => {
+    // The mutation reads `mood`/`rating`; this used to pass `overallMood`/
+    // `overallRating`, so every workout was saved with no feedback at all.
     completeSession({
-      overallMood: feedback.mood,
-      overallRating: feedback.rating,
+      mood: feedback.mood,
+      rating: feedback.rating,
       notes: feedback.comment,
     });
     navigate("/workouts");

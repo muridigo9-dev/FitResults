@@ -281,10 +281,31 @@ export function useWorkoutSession(sessionId?: string) {
     }
   });
 
+  /**
+   * Stamps the moment a student actually arrived at an exercise.
+   *
+   * `complete_session_exercise` already writes `completed_at`, so this is the
+   * other half of "how long did this movement take" - the measurement the
+   * guided player records in place of asking anyone to type it in.
+   */
+  const startExerciseMutation = useMutation({
+    mutationFn: async (sessionExerciseId: string) => {
+      const { error } = await supabase
+        .from("session_exercises")
+        .update({ started_at: new Date().toISOString() })
+        .eq("id", sessionExerciseId);
+      if (error) throw error;
+    },
+    onError: (error) => {
+      // Losing the start stamp costs a statistic, never the workout.
+      console.error("Error stamping exercise start:", error);
+    },
+  });
+
   const completeSessionMutation = useMutation({
     mutationFn: async (data: {
-      mood: ExerciseFeedbackMood;
-      rating: number;
+      mood?: ExerciseFeedbackMood;
+      rating?: number;
       notes?: string;
       durationSeconds?: number; // Optional in frontend, calculated in backend
     }) => {
@@ -417,6 +438,12 @@ export function useWorkoutSession(sessionId?: string) {
     completeExercise: completeExerciseMutation.mutate,
     completeSet: completeSetMutation.mutate,
     completeSession: completeSessionMutation.mutate,
+    // Awaitable variants, for the guided player: it logs a set, marks the
+    // exercise done and only then moves the student on.
+    startExercise: startExerciseMutation.mutate,
+    completeExerciseAsync: completeExerciseMutation.mutateAsync,
+    completeSetAsync: completeSetMutation.mutateAsync,
+    completeSessionAsync: completeSessionMutation.mutateAsync,
     pauseSession: pauseSessionMutation.mutate,
     resumeSession: resumeSessionMutation.mutate,
     abandonSession: abandonSessionMutation.mutate,

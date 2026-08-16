@@ -17,7 +17,7 @@ import {
   Zap,
   Target
 } from "lucide-react";
-import { resolveImageUrl } from "@/hooks/useStorageUpload";
+import { WorkoutThumbnail } from "@/components/workout/WorkoutThumbnail";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -262,15 +262,13 @@ interface WorkoutCardProps {
 function WorkoutCard({ workout, canEdit, estimatedDuration, onEdit, onDelete }: WorkoutCardProps) {
   const { t } = useI18n();
   const categoryLabel = workoutCategoryLabel(t, workout.category);
-  const defaultImage = "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400&q=80";
 
   return (
     <Card className="overflow-hidden group hover:shadow-xl transition-all duration-300 border-border/50 hover:border-primary/30">
       {/* Image */}
       <div className="relative h-48 overflow-hidden bg-gradient-to-br from-muted to-muted/50">
-        <img
-          src={resolveImageUrl('workouts-media', workout.imagePath, workout.imageUrl)}
-          alt={workout.title}
+        <WorkoutThumbnail
+          workout={workout}
           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
         />
         {/* Overlay gradient */}

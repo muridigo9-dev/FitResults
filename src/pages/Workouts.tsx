@@ -33,7 +33,7 @@ import { UserWorkout } from "@/types/userContent";
 import { useExercises, useMuscleGroups } from "@/hooks/useExercises";
 import { toast } from "sonner";
 import { useI18n } from "@/hooks/useI18n";
-import { resolveImageUrl } from "@/hooks/useStorageUpload";
+import { WorkoutThumbnail } from "@/components/workout/WorkoutThumbnail";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -347,11 +347,7 @@ export default function Workouts() {
                       <div className="relative bg-card rounded-2xl overflow-hidden shadow-sm border group-hover:shadow-md transition-all duration-300 group-active:scale-[0.98]">
                         <div className="flex h-32 md:h-36">
                           <div className="w-1/3 md:w-36 relative shrink-0">
-                            <img
-                              src={resolveImageUrl('workouts-media', workout.imagePath, workout.imageUrl)}
-                              alt={workout.title}
-                              className="w-full h-full object-cover"
-                            />
+                            <WorkoutThumbnail workout={workout} />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                             <div className="absolute bottom-2 left-2 right-2 flex items-center gap-1 text-[10px] text-white font-medium bg-black/40 backdrop-blur-md px-2 py-1 rounded-md justify-center">
                               <Timer className="w-3 h-3" />
@@ -432,11 +428,7 @@ export default function Workouts() {
                     <div key={workout.id} className="relative bg-card rounded-2xl overflow-hidden shadow-sm border hover:shadow-md transition-all duration-300">
                       <div className="flex h-32 md:h-36">
                         <div className="w-1/3 md:w-36 relative shrink-0">
-                          <img
-                            src={resolveImageUrl('workouts-media', workout.imagePath, workout.imageUrl)}
-                            alt={workout.title}
-                            className="w-full h-full object-cover"
-                          />
+                          <WorkoutThumbnail workout={workout} />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                           <div className="absolute bottom-2 left-2 right-2 flex items-center gap-1 text-[10px] text-white font-medium bg-black/40 backdrop-blur-md px-2 py-1 rounded-md justify-center">
                             <Timer className="w-3 h-3" />
@@ -523,11 +515,7 @@ export default function Workouts() {
                     <div className="relative bg-card rounded-2xl overflow-hidden shadow-sm border group-hover:shadow-md transition-all duration-300 group-active:scale-[0.98]">
                       <div className="flex h-32 md:h-36">
                         <div className="w-1/3 md:w-36 relative shrink-0">
-                          <img
-                            src={workout.imageUrl || "/placeholder.svg"}
-                            alt={workout.title}
-                            className="w-full h-full object-cover"
-                          />
+                          <WorkoutThumbnail workout={workout} />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                           <div className="absolute bottom-2 left-2 right-2 flex items-center gap-1 text-[10px] text-white font-medium bg-black/40 backdrop-blur-md px-2 py-1 rounded-md justify-center">
                             <Timer className="w-3 h-3" />

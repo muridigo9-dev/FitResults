@@ -11,6 +11,7 @@ type ExerciseMediaSource = {
     gifUrl?: string | null;
     imageUrl?: string | null;
     imagePath?: string | null;
+    videoUrl?: string | null;
 };
 
 /**
@@ -21,6 +22,11 @@ type ExerciseMediaSource = {
  * `image_path` pointing outside the exercises-media bucket - render in the grid
  * and break when opened. Returning the whole chain lets the UI fall back to the
  * other source instead of dropping straight to the placeholder.
+ *
+ * `videoUrl` comes last on purpose: in practice the uploader writes clips to
+ * `image_path` (the .mp4 lives in the exercises-media bucket like any other
+ * asset), so the dedicated column is only a fallback for rows that set it
+ * explicitly. Keeping it last also leaves thumbnail priority unchanged.
  */
 export function getExerciseMediaCandidates(exercise: ExerciseMediaSource): string[] {
     const candidates: string[] = [];
@@ -40,7 +46,14 @@ export function getExerciseMediaCandidates(exercise: ExerciseMediaSource): strin
         );
     }
 
+    push(exercise.videoUrl);
+
     return candidates;
+}
+
+/** True when the exercise has a clip the instructions panel can play. */
+export function hasExerciseVideo(exercise: ExerciseMediaSource): boolean {
+    return getExerciseMediaCandidates(exercise).some(isVideoUrl);
 }
 
 /** First usable media URL, or the placeholder when the exercise has none. */

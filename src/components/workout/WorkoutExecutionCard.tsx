@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, ChevronUp, Check, SkipForward, Info, Link as LinkIcon, RotateCcw, TrendingUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Check, SkipForward, Info, Link as LinkIcon, RotateCcw, TrendingUp, VideoOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +14,8 @@ import { useLastExerciseLog } from "@/hooks/useWorkoutSession";
 import type { SessionExercise, ExerciseFeedbackMood, LikeDislike } from "@/types/workout";
 import { EQUIPMENT_LABELS, DIFFICULTY_LABELS } from "@/types/workout";
 import { ExerciseMedia } from "@/components/exercise/ExerciseMedia";
+import { hasExerciseVideo } from "@/lib/exerciseMedia";
+import { useI18n } from "@/hooks/useI18n";
 
 interface WorkoutExecutionCardProps {
   sessionExercise: SessionExercise;
@@ -59,7 +61,9 @@ export function WorkoutExecutionCard({
   const [suggestionValues, setSuggestionValues] = useState<{ weight?: number, reps?: number } | null>(null);
   const [isSuggestionDismissed, setIsSuggestionDismissed] = useState(false);
 
+  const { t } = useI18n();
   const exercise = sessionExercise.exercise;
+  const hasVideo = hasExerciseVideo(exercise ?? {});
   const { data: history } = useExerciseHistory(exercise?.id);
   const { data: lastLog } = useLastExerciseLog(exercise?.id, sessionExercise.sessionId, isExpanded);
 
@@ -262,33 +266,32 @@ export function WorkoutExecutionCard({
 
               {showInstructions && (
                 <div className="mt-2 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
-                  {/* Media */}
-                  {(exercise.videoUrl || exercise.gifUrl || exercise.imageUrl || exercise.imagePath) && (
-                    <div className="relative aspect-video sm:aspect-auto sm:h-[400px] w-full rounded-lg overflow-hidden bg-muted shadow-sm border mx-auto">
-                      {exercise.videoUrl ? (
-                        <video
-                          src={exercise.videoUrl}
-                          controls
-                          className="w-full h-full object-contain bg-black"
-                          poster={exercise.imageUrl || exercise.thumbnailUrl}
-                        />
-                      ) : (
-                        <ExerciseMedia
-                          exercise={exercise}
-                          isActive
-                          loading="eager"
-                          className="w-full h-full object-contain bg-background"
-                        />
-                      )}
-                    </div>
-                  )}
-
-                  {/* Text */}
+                  {/* Text first: it is what the reader came for, and it is there
+                      even for the exercises that carry no clip. */}
                   {exercise.instructions && (
                     <div className="text-sm text-muted-foreground p-3 bg-muted/50 rounded-lg leading-relaxed whitespace-pre-wrap">
                       {exercise.instructions}
                     </div>
                   )}
+
+                  {/* Media. ExerciseMedia walks gif -> image -> image_path ->
+                      video_url, which is what actually holds the clips, and
+                      gives a video its controls so it can be watched here
+                      rather than only looping. */}
+                  <div className="relative aspect-video sm:aspect-auto sm:h-[400px] w-full rounded-lg overflow-hidden bg-muted shadow-sm border mx-auto">
+                    <ExerciseMedia
+                      exercise={exercise}
+                      controls={hasVideo}
+                      loading="eager"
+                      className="w-full h-full object-contain bg-background"
+                      fallback={
+                        <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-muted-foreground p-6 text-center">
+                          <VideoOff className="h-7 w-7 opacity-40" />
+                          <p className="text-xs">{t("workouts.noVideo")}</p>
+                        </div>
+                      }
+                    />
+                  </div>
                 </div>
               )}
             </div>

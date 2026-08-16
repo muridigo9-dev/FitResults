@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useI18nSafe } from "@/hooks/useI18nSafe";
 import { localizedField } from "@/lib/contentI18n";
+import { mapSessionExercise, readPlanSnapshot } from "@/lib/sessionExercise";
 import type {
   WorkoutSession,
   SessionExercise,
@@ -96,16 +97,9 @@ export function useWorkoutSession(sessionId?: string) {
             id: ex.id,
             sessionId: ex.session_id,
             exerciseId: ex.exercise_id,
-            exercise: ex.exercise
-              ? {
-                ...ex.exercise,
-                name: localizedField(ex.exercise, "name", language),
-                description: localizedField(ex.exercise, "description", language),
-                instructions: localizedField(ex.exercise, "instructions", language),
-              }
-              : ex.exercise,
+            exercise: mapSessionExercise(ex.exercise, ex.metadata, language),
             seriesExerciseId: ex.series_exercise_id,
-            supersetId: ex.superset_id,
+            supersetId: readPlanSnapshot(ex.metadata).superset_id ?? undefined,
             displayOrder: ex.display_order,
             isCompleted: ex.is_completed,
             skipped: ex.skipped,

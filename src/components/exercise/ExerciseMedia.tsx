@@ -7,6 +7,7 @@ interface ExerciseMediaProps {
         gifUrl?: string | null;
         imageUrl?: string | null;
         imagePath?: string | null;
+        videoUrl?: string | null;
     };
     className?: string;
     /** Autoplays when the media is a video (cards and thumbnails keep it off). */
@@ -14,6 +15,13 @@ interface ExerciseMediaProps {
     loading?: "lazy" | "eager";
     /** Rendered when the exercise has no media, or every candidate failed. */
     fallback?: ReactNode;
+    /**
+     * Gives a video clip its native player chrome, for the places where the
+     * point is to *watch* it (the instructions panel) rather than to show a
+     * looping preview. Implies no autoplay and no loop, so the clip does not
+     * restart under the reader.
+     */
+    controls?: boolean;
 }
 
 /**
@@ -26,12 +34,13 @@ export function ExerciseMedia({
     isActive = false,
     loading = "lazy",
     fallback,
+    controls = false,
 }: ExerciseMediaProps) {
-    const { name, gifUrl, imageUrl, imagePath } = exercise;
+    const { name, gifUrl, imageUrl, imagePath, videoUrl } = exercise;
 
     const candidates = useMemo(
-        () => getExerciseMediaCandidates({ gifUrl, imageUrl, imagePath }),
-        [gifUrl, imageUrl, imagePath]
+        () => getExerciseMediaCandidates({ gifUrl, imageUrl, imagePath, videoUrl }),
+        [gifUrl, imageUrl, imagePath, videoUrl]
     );
     const candidatesKey = candidates.join("|");
 
@@ -63,7 +72,7 @@ export function ExerciseMedia({
          * playback and looping start where the clip does. The fragment is only
          * appended when the URL has no hash of its own.
          */
-        const shouldSeek = !isActive && !src.includes("#");
+        const shouldSeek = !isActive && !controls && !src.includes("#");
         const videoSrc = shouldSeek ? `${src}#t=0.1` : src;
 
         return (
@@ -71,9 +80,10 @@ export function ExerciseMedia({
                 key={videoSrc}
                 src={videoSrc}
                 className={className}
-                autoPlay={isActive}
-                loop
-                muted
+                controls={controls}
+                autoPlay={isActive && !controls}
+                loop={!controls}
+                muted={!controls}
                 playsInline
                 preload="metadata"
                 onError={handleError}

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Play, Info, Check, Dumbbell, Timer, Zap, Flame, ChevronRight, X } from "lucide-react";
+import { ArrowLeft, Play, Info, Check, Dumbbell, Timer, Zap, Flame, ChevronRight, X, VideoOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +16,7 @@ import { Carousel, CarouselContent, CarouselItem, CarouselApi } from "@/componen
 import { useFeatureFlag } from "@/contexts/FeatureFlagsContext";
 import { useI18n } from "@/hooks/useI18n";
 import { ExerciseMedia } from "@/components/exercise/ExerciseMedia";
+import { hasExerciseVideo } from "@/lib/exerciseMedia";
 import {
   Dialog,
   DialogContent,
@@ -319,7 +320,7 @@ export default function WorkoutDetail() {
                         <DialogTrigger asChild>
                           <Button variant="link" size="sm" className="px-0 text-primary h-auto mt-1">
                             <Info className="w-4 h-4 mr-1" />
-                            Como fazer?
+                            {t("workouts.howTo")}
                           </Button>
                         </DialogTrigger>
                         <DialogContent className="max-w-2xl">
@@ -328,22 +329,20 @@ export default function WorkoutDetail() {
                           </DialogHeader>
                           <div className="mt-4 space-y-4">
                             <div className="aspect-video rounded-lg overflow-hidden bg-muted flex items-center justify-center bg-black/5">
-                              {/* Priority: Video -> Gif -> Image */}
-                              {exercise.videoUrl ? (
-                                <video
-                                  src={exercise.videoUrl}
-                                  controls
-                                  className="w-full h-full object-contain"
-                                  poster={exercise.imageUrl}
-                                />
-                              ) : (
-                                <ExerciseMedia
-                                  exercise={exercise}
-                                  isActive
-                                  loading="eager"
-                                  className="w-full h-full object-contain"
-                                />
-                              )}
+                              {/* ExerciseMedia walks every source; a clip gets
+                                  its controls so it can be watched here. */}
+                              <ExerciseMedia
+                                exercise={exercise}
+                                controls={hasExerciseVideo(exercise)}
+                                loading="eager"
+                                className="w-full h-full object-contain"
+                                fallback={
+                                  <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-muted-foreground p-6 text-center">
+                                    <VideoOff className="h-7 w-7 opacity-40" />
+                                    <p className="text-xs">{t("workouts.noVideo")}</p>
+                                  </div>
+                                }
+                              />
                             </div>
                             <div className="text-sm space-y-2">
                               <p>{exercise.description || t("workouts.noInstructions")}</p>
@@ -444,12 +443,12 @@ export default function WorkoutDetail() {
             ) : hasActiveSession ? (
               <>
                 <Play className="w-6 h-6 mr-2" />
-                Continuar Treino
+                {t("workouts.continueWorkout")}
               </>
             ) : (
               <>
                 <Play className="w-6 h-6 mr-2" />
-                INICIAR TREINO
+                <span className="uppercase">{t("workouts.startWorkout")}</span>
               </>
             )}
           </Button>

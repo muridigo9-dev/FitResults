@@ -3,6 +3,7 @@ import React, { createContext, useContext, useEffect, useState, ReactNode } from
 import { useActiveSession, useWorkoutSession } from "@/hooks/useWorkoutSession";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { useI18nSafe } from "@/hooks/useI18nSafe";
 import { useQueryClient } from "@tanstack/react-query";
 
 interface ActiveSessionData {
@@ -34,6 +35,7 @@ export function ActiveWorkoutProvider({ children }: { children: ReactNode }) {
     const { data: activeSession, isLoading } = useActiveSession();
     const navigate = useNavigate();
     const { toast } = useToast();
+    const { t } = useI18nSafe();
     const queryClient = useQueryClient();
 
     // We initialize the hook with the active session ID so we can control it (cancel, etc)
@@ -59,8 +61,8 @@ export function ActiveWorkoutProvider({ children }: { children: ReactNode }) {
 
             // If different, we block. The UI should ask user to cancel first.
             toast({
-                title: "Treino em andamento",
-                description: "Você já possui um treino ativo. Finalize-o antes de iniciar outro.",
+                title: t("execution.toasts.alreadyActive"),
+                description: t("execution.toasts.alreadyActiveDescription"),
                 variant: "destructive",
             });
             return null;
@@ -88,8 +90,8 @@ export function ActiveWorkoutProvider({ children }: { children: ReactNode }) {
             // Force immediate update of the cache
             await queryClient.invalidateQueries({ queryKey: ["active-workout-session"] });
             toast({
-                title: "Treino cancelado",
-                description: "O treino em andamento foi cancelado.",
+                title: t("execution.toasts.cancelled"),
+                description: t("execution.toasts.cancelledDescription"),
             });
         } catch (error) {
             console.error("Failed to cancel workout:", error);

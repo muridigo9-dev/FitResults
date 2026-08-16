@@ -25,7 +25,7 @@ export function useWorkoutSession(sessionId?: string) {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { language } = useI18nSafe();
+  const { language, t } = useI18nSafe();
 
   // Timer state
   const [restTimeRemaining, setRestTimeRemaining] = useState(0);
@@ -213,11 +213,11 @@ export function useWorkoutSession(sessionId?: string) {
       if (newSessionId) {
         queryClient.invalidateQueries({ queryKey: ["workout-session", newSessionId] });
       }
-      toast({ title: "Treino iniciado", description: "Bom treino!" });
+      toast({ title: t("execution.toasts.started"), description: t("execution.toasts.startedDescription") });
     },
     onError: (error) => {
       console.error("Error starting session:", error);
-      toast({ variant: "destructive", title: "Erro ao iniciar treino" });
+      toast({ variant: "destructive", title: t("execution.toasts.startError") });
     },
   });
 
@@ -240,7 +240,7 @@ export function useWorkoutSession(sessionId?: string) {
     },
     onError: (error) => {
       console.error("Error completing exercise:", error);
-      toast({ variant: "destructive", title: "Erro ao concluir exercício" });
+      toast({ variant: "destructive", title: t("execution.toasts.completeExerciseError") });
     },
   });
 
@@ -277,7 +277,7 @@ export function useWorkoutSession(sessionId?: string) {
     },
     onError: (error) => {
       console.error("Error completing set:", error);
-      toast({ variant: "destructive", title: "Erro ao salvar série" });
+      toast({ variant: "destructive", title: t("execution.toasts.saveSetError") });
     }
   });
 
@@ -328,11 +328,11 @@ export function useWorkoutSession(sessionId?: string) {
       queryClient.invalidateQueries({ queryKey: ["workout-history"] });
       queryClient.invalidateQueries({ queryKey: ["workout-streak"] });
       queryClient.invalidateQueries({ queryKey: ["today-checkin"] });
-      toast({ title: "Treino concluído!", description: "Sua sessão foi salva com sucesso." });
+      toast({ title: t("execution.toasts.completed"), description: t("execution.toasts.completedDescription") });
     },
     onError: (error) => {
       console.error("Error completing session:", error);
-      toast({ variant: "destructive", title: "Erro ao concluir treino" });
+      toast({ variant: "destructive", title: t("execution.toasts.completeError") });
     }
   });
 

@@ -152,7 +152,7 @@ export default function WorkoutDetail() {
   if (isLoading) {
     return (
       <AppLayout>
-        <AnimatedLoader type="workout" message="Carregando treino..." fullScreen />
+        <AnimatedLoader type="workout" message={t("execution.loadingWorkout")} fullScreen />
       </AppLayout>
     );
   }
@@ -341,7 +341,7 @@ export default function WorkoutDetail() {
   if (isLoading) {
     return (
       <AppLayout>
-        <AnimatedLoader type="workout" message="Carregando treino..." fullScreen />
+        <AnimatedLoader type="workout" message={t("execution.loadingWorkout")} fullScreen />
       </AppLayout>
     );
   }

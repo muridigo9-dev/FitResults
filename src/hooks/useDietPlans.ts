@@ -5,7 +5,8 @@ import type { DietPlan, DietPlanMeal, DietPlanMealOption, Dish } from "@/types/c
 import { useFeatureFlag } from "@/contexts/FeatureFlagsContext";
 import type { BlockReason } from "./useUserCapabilities";
 import { resolveImageUrl } from "./useStorageUpload";
-import { MEAL_TYPE_LABELS } from "@/lib/constants";
+import { useI18nSafe } from "./useI18nSafe";
+import { localizedField } from "@/lib/contentI18n";
 
 export interface DietPlansData {
     dietPlans: DietPlan[];
@@ -15,7 +16,7 @@ export interface DietPlansData {
     featureEnabled: boolean;
 }
 
-const mapPlanData = (plan: any): DietPlan => {
+const mapPlanData = (plan: any, language: string): DietPlan => {
     // Strategy: Try to get meals from direct relationship first (Legacy/Simplified)
     // If empty, try to get from days -> meals mapping
     let rawSessions = plan.sessions || [];
@@ -82,8 +83,8 @@ const mapPlanData = (plan: any): DietPlan => {
                         parentItemId: item.parent_item_id,
                         dish: dish ? {
                             id: dish.id,
-                            title: dish.title,
-                            description: dish.description,
+                            title: localizedField(dish, "title", language),
+                            description: localizedField(dish, "description", language),
                             imageUrl: dish.image_url,
                             category: dish.category,
                             ingredients: [...legacyIngredients, ...smartIngredients],
@@ -108,8 +109,8 @@ const mapPlanData = (plan: any): DietPlan => {
 
     return {
         id: plan.id,
-        title: plan.title,
-        description: plan.description,
+        title: localizedField(plan, "title", language),
+        description: localizedField(plan, "description", language),
         objective: plan.objective,
         objectiveBadge: plan.objective_badge,
         durationDays: plan.duration_days || 7,
@@ -155,11 +156,12 @@ const PLAN_SELECT_QUERY = `
 `;
 
 export function useDietPlans(): DietPlansData {
+    const { language } = useI18nSafe();
     const { user } = useAuth();
     const { isEnabled } = useFeatureFlag('diets_enabled');
 
     const { data: dietPlans = [], isLoading, error } = useQuery({
-        queryKey: ["diet-plans", user?.id],
+        queryKey: ["diet-plans", user?.id, language],
         enabled: !!user && isEnabled,
         staleTime: 1000 * 60 * 5,
         queryFn: async () => {
@@ -176,7 +178,7 @@ export function useDietPlans(): DietPlansData {
                 throw plansError;
             }
 
-            return (plans || []).map(mapPlanData);
+            return (plans || []).map((plan) => mapPlanData(plan, language));
         }
     });
 
@@ -196,11 +198,12 @@ export function useDietPlans(): DietPlansData {
 }
 
 export function useDietPlan(planId?: string) {
+    const { language } = useI18nSafe();
     const { user } = useAuth();
     const { isEnabled } = useFeatureFlag('diets_enabled');
 
     return useQuery({
-        queryKey: ["diet-plan", planId, user?.id],
+        queryKey: ["diet-plan", planId, user?.id, language],
         enabled: !!user && !!planId && isEnabled,
         staleTime: 1000 * 60 * 5,
         queryFn: async () => {
@@ -218,7 +221,7 @@ export function useDietPlan(planId?: string) {
             }
             if (!plan) return null;
 
-            return mapPlanData(plan);
+            return mapPlanData(plan, language);
         }
     });
 }

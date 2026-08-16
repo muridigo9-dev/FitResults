@@ -14,7 +14,8 @@ import {
   ChevronUp,
   ChevronDown,
   Info,
-  Dumbbell
+  Dumbbell,
+  Languages
 } from "lucide-react";
 import { Workout, Exercise, MuscleGroup, ExerciseType, ExerciseLevel, ContentAssignment, VisibilityScope } from "@/types/content";
 import {
@@ -35,9 +36,11 @@ import { Badge } from "@/components/ui/badge";
 import { ImageUploader } from "./ImageUploader";
 import { ContentAssignmentSelector } from "./ContentAssignmentSelector";
 import { VisibilitySelector } from "./VisibilitySelector";
+import { TranslationFields } from "./TranslationFields";
 import type { VisibilityType } from "@/hooks/useUnifiedVisibility";
 import { toast } from "sonner";
-import { WORKOUT_CATEGORY_LABELS } from "@/lib/constants";
+import { workoutCategoryOptions } from "@/lib/constants";
+import { useI18nSafe } from "@/hooks/useI18nSafe";
 
 interface WorkoutFormProps {
   workout?: Workout & { imagePath?: string; assigned_to_type?: VisibilityScope; assigned_to_id?: string | null };
@@ -60,8 +63,13 @@ export function WorkoutForm({
   exerciseLevels = [],
   showVisibilitySelector = true
 }: WorkoutFormProps) {
+  const { t } = useI18nSafe();
   const [title, setTitle] = useState(workout?.title || "");
   const [description, setDescription] = useState(workout?.description || "");
+  const [titleEn, setTitleEn] = useState(workout?.titleEn || "");
+  const [titleEs, setTitleEs] = useState(workout?.titleEs || "");
+  const [descriptionEn, setDescriptionEn] = useState(workout?.descriptionEn || "");
+  const [descriptionEs, setDescriptionEs] = useState(workout?.descriptionEs || "");
   const [imageUrl, setImageUrl] = useState(workout?.imageUrl || "");
   const [imagePath, setImagePath] = useState(workout?.imagePath || "");
   const [category, setCategory] = useState(workout?.category || "");
@@ -208,6 +216,10 @@ export function WorkoutForm({
     onSave({
       title,
       description,
+      titleEn,
+      titleEs,
+      descriptionEn,
+      descriptionEs,
       imageUrl,
       imagePath: imagePath || undefined,
       category,
@@ -246,8 +258,8 @@ export function WorkoutForm({
                   <SelectValue placeholder="Selecione..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {Object.entries(WORKOUT_CATEGORY_LABELS).map(([key, label]) => (
-                    <SelectItem key={key} value={key}>{label}</SelectItem>
+                  {workoutCategoryOptions(t).map(({ value, label }) => (
+                    <SelectItem key={value} value={value}>{label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -262,6 +274,21 @@ export function WorkoutForm({
               className="min-h-[100px] bg-background/50 border-primary/20"
             />
           </div>
+
+          <TranslationFields
+            fields={[
+              { key: "title", label: "Nome do Treino", placeholderEn: "Ex: PUSH A - Hypertrophy", placeholderEs: "Ej: PUSH A - Hipertrofia" },
+              { key: "description", label: "Descrição", multiline: true, placeholderEn: "Additional notes about the workout...", placeholderEs: "Notas adicionales sobre el entrenamiento..." },
+            ]}
+            values={{ titleEn, titleEs, descriptionEn, descriptionEs }}
+            onChange={(key, value) => {
+              if (key === "titleEn") setTitleEn(value);
+              else if (key === "titleEs") setTitleEs(value);
+              else if (key === "descriptionEn") setDescriptionEn(value);
+              else if (key === "descriptionEs") setDescriptionEs(value);
+            }}
+          />
+
           <ImageUploader
             bucket="workouts-media"
             storagePath={`system/${tempId}`}

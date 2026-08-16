@@ -2,6 +2,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { useI18nSafe } from "./useI18nSafe";
+import { localizedField } from "@/lib/contentI18n";
 
 // Types
 export interface Achievement {
@@ -41,8 +43,9 @@ export interface AchievementProgress {
  * Hook to fetch all achievements
  */
 export function useAchievements() {
+  const { language } = useI18nSafe();
   return useQuery<Achievement[], Error>({
-    queryKey: ["achievements"],
+    queryKey: ["achievements", language],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("achievements")
@@ -52,7 +55,11 @@ export function useAchievements() {
         .order("created_at", { ascending: true });
 
       if (error) throw error;
-      return data || [];
+      return (data || []).map((achievement: any) => ({
+        ...achievement,
+        name: localizedField(achievement, "name", language),
+        description: localizedField(achievement, "description", language),
+      }));
     },
     staleTime: 1000 * 60 * 10, // 10 minutes
   });

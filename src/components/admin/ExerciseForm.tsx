@@ -9,7 +9,7 @@ import { ImageUploader } from "./ImageUploader";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { AlertCircle, Dumbbell, Activity, Target } from "lucide-react";
+import { AlertCircle, Dumbbell, Activity, Target, Languages } from "lucide-react";
 import {
     Select,
     SelectContent,
@@ -19,12 +19,18 @@ import {
 } from "@/components/ui/select";
 import { ExerciseType, ExerciseLevel } from "@/types/content";
 import { VisibilitySelector } from "./VisibilitySelector";
+import { TranslationFields } from "./TranslationFields";
 import type { VisibilityType } from "@/hooks/useUnifiedVisibility";
 
 // Types matching the provided modeling
 export interface ExerciseFormValues {
     name: string;
     description: string;
+    /** Translations. Left blank, the app falls back to the pt-BR fields above. */
+    nameEn?: string;
+    nameEs?: string;
+    descriptionEn?: string;
+    descriptionEs?: string;
     imageUrl?: string;
     imagePath?: string;
     muscleGroupIds: string[];
@@ -59,6 +65,10 @@ export function ExerciseForm({
 }: ExerciseFormProps) {
     const [name, setName] = useState(initialData?.name || "");
     const [description, setDescription] = useState(initialData?.description || "");
+    const [nameEn, setNameEn] = useState(initialData?.nameEn || "");
+    const [nameEs, setNameEs] = useState(initialData?.nameEs || "");
+    const [descriptionEn, setDescriptionEn] = useState(initialData?.descriptionEn || "");
+    const [descriptionEs, setDescriptionEs] = useState(initialData?.descriptionEs || "");
     const [imageUrl, setImageUrl] = useState(initialData?.imageUrl || "");
     const [imagePath, setImagePath] = useState(initialData?.imagePath || "");
     const [selectedMuscleGroups, setSelectedMuscleGroups] = useState<string[]>([]); // Initialize empty then effect
@@ -74,6 +84,10 @@ export function ExerciseForm({
         if (initialData) {
             setName(initialData.name || "");
             setDescription(initialData.description || "");
+            setNameEn(initialData.nameEn || "");
+            setNameEs(initialData.nameEs || "");
+            setDescriptionEn(initialData.descriptionEn || "");
+            setDescriptionEs(initialData.descriptionEs || "");
             setImageUrl(initialData.imageUrl || "");
             setImagePath(initialData.imagePath || "");
             setSelectedMuscleGroups(initialData.muscleGroupIds || []);
@@ -118,6 +132,10 @@ export function ExerciseForm({
             onSave({
                 name,
                 description,
+                nameEn,
+                nameEs,
+                descriptionEn,
+                descriptionEs,
                 imageUrl,
                 imagePath,
                 muscleGroupIds: selectedMuscleGroups,
@@ -241,6 +259,20 @@ export function ExerciseForm({
                                 className="min-h-[140px] resize-none bg-background/50 border-border/50 focus:border-primary transition-all"
                             />
                         </div>
+
+                        <TranslationFields
+                            fields={[
+                                { key: "name", label: "Nome", placeholderEn: "Ex: Barbell Bench Press", placeholderEs: "Ej: Press de Banca con Barra" },
+                                { key: "description", label: "Descrição", multiline: true, placeholderEn: "Describe the correct execution, tips and points of attention...", placeholderEs: "Describe la ejecución correcta, consejos y puntos de atención..." },
+                            ]}
+                            values={{ nameEn, nameEs, descriptionEn, descriptionEs }}
+                            onChange={(key, value) => {
+                                if (key === "nameEn") setNameEn(value);
+                                else if (key === "nameEs") setNameEs(value);
+                                else if (key === "descriptionEn") setDescriptionEn(value);
+                                else if (key === "descriptionEs") setDescriptionEs(value);
+                            }}
+                        />
                     </div>
 
                     {/* Media Section */}

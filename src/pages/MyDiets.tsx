@@ -28,8 +28,8 @@ import {
 } from "lucide-react";
 import { useSmartPortions } from "@/hooks/useSmartPortions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MEAL_TYPE_LABELS } from "@/lib/constants";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
+import { useI18n } from "@/hooks/useI18n";
 import { useAuth } from "@/contexts/AuthContext";
 import { Diet } from "@/types/content";
 import { Input } from "@/components/ui/input";
@@ -46,6 +46,7 @@ import {
 
 
 export default function MyDiets() {
+  const { t } = useI18n();
   const { user } = useAuth();
   const { dishes, isLoadingDishes } = useStudentNutrition();
   const { dietPlans, isLoading: isLoadingPlans, downloadPDF } = useStudentDietPlans();
@@ -244,18 +245,18 @@ export default function MyDiets() {
         <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Excluir Prato?</AlertDialogTitle>
+              <AlertDialogTitle>{t("diets.deleteDialog.title")}</AlertDialogTitle>
               <AlertDialogDescription>
-                Esta ação não pode ser desfeita. O prato será removido permanentemente.
+                {t("diets.deleteDialog.description")}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogCancel>{t("actions.cancel")}</AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleDelete}
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >
-                Confirmar Exclusão
+                {t("diets.deleteDialog.confirm")}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -268,6 +269,7 @@ export default function MyDiets() {
 
 // Empty state for Plans
 function EmptyPlansState() {
+  const { t } = useI18n();
   return (
     <Card className="border-dashed">
       <CardContent className="flex flex-col items-center justify-center py-16">
@@ -275,10 +277,10 @@ function EmptyPlansState() {
           <CalendarDays className="h-8 w-8 text-primary" />
         </div>
         <h3 className="font-semibold text-foreground mb-2">
-          Nenhum plano alimentar
+          {t("diets.empty.noPlansTitle")}
         </h3>
         <p className="text-sm text-muted-foreground text-center max-w-sm">
-          Você ainda não possui um plano alimentar atribuído. Converse com seu treinador ou nutricionista.
+          {t("diets.empty.noPlansDescription")}
         </p>
       </CardContent>
     </Card>
@@ -287,6 +289,7 @@ function EmptyPlansState() {
 
 // Empty state for system diets
 function EmptyDietsState() {
+  const { t } = useI18n();
   return (
     <Card className="border-dashed">
       <CardContent className="flex flex-col items-center justify-center py-16">
@@ -294,10 +297,10 @@ function EmptyDietsState() {
           <Utensils className="h-8 w-8 text-muted-foreground" />
         </div>
         <h3 className="font-semibold text-foreground mb-2">
-          Nenhuma sugestão disponível
+          {t("diets.empty.noSuggestionsTitle")}
         </h3>
         <p className="text-sm text-muted-foreground text-center max-w-sm">
-          Seu nutricionista ou academia ainda não adicionaram pratos.
+          {t("diets.empty.noSuggestionsDescription")}
         </p>
       </CardContent>
     </Card>
@@ -306,6 +309,7 @@ function EmptyDietsState() {
 
 // Empty state for user diets
 function EmptyUserDietsState({ canCreate, onCreate }: { canCreate: boolean; onCreate: () => void }) {
+  const { t } = useI18n();
   return (
     <Card className="border-dashed">
       <CardContent className="flex flex-col items-center justify-center py-16">
@@ -313,17 +317,17 @@ function EmptyUserDietsState({ canCreate, onCreate }: { canCreate: boolean; onCr
           <Utensils className="h-8 w-8 text-primary" />
         </div>
         <h3 className="font-semibold text-foreground mb-2">
-          Seus Pratos Personalizados
+          {t("diets.empty.userTitle")}
         </h3>
         <p className="text-sm text-muted-foreground text-center max-w-sm mb-4">
           {canCreate
-            ? "Crie pratos que se encaixam na sua rotina e preferências."
-            : "A criação de pratos personalizados não está disponível no momento."}
+            ? t("diets.empty.createHint")
+            : t("diets.empty.creationDisabled")}
         </p>
         {canCreate && (
           <Button onClick={onCreate} className="gap-2">
             <Plus className="h-4 w-4" />
-            Criar Primeiro Prato
+            {t("diets.empty.createFirst")}
           </Button>
         )}
       </CardContent>

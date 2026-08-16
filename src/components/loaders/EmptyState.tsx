@@ -20,6 +20,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ReactNode } from "react";
+import { useI18n } from "@/hooks/useI18n";
 
 export type EmptyStateType =
   | "health"
@@ -128,15 +129,16 @@ export function EmptyState({
 // ============================================
 
 export function NoWorkoutsEmptyState({ onCreateClick }: { onCreateClick?: () => void }) {
+  const { t } = useI18n();
   return (
     <EmptyState
       type="workout"
-      title="Nenhum treino encontrado"
-      description="Comece criando seu primeiro treino personalizado ou aguarde seu personal atribuir um para você."
+      title={t("states.emptyStates.workouts.title")}
+      description={t("states.emptyStates.workouts.description")}
       action={
         onCreateClick
           ? {
-              label: "Criar Treino",
+              label: t("workouts.createWorkout"),
               onClick: onCreateClick,
             }
           : undefined
@@ -146,15 +148,16 @@ export function NoWorkoutsEmptyState({ onCreateClick }: { onCreateClick?: () => 
 }
 
 export function NoDietsEmptyState({ onCreateClick }: { onCreateClick?: () => void }) {
+  const { t } = useI18n();
   return (
     <EmptyState
       type="diet"
-      title="Nenhuma dieta encontrada"
-      description="Monte sua primeira dieta ou aguarde seu nutricionista criar uma para você."
+      title={t("states.emptyStates.diets.title")}
+      description={t("states.emptyStates.diets.description")}
       action={
         onCreateClick
           ? {
-              label: "Criar Dieta",
+              label: t("states.emptyStates.diets.action"),
               onClick: onCreateClick,
             }
           : undefined
@@ -164,15 +167,16 @@ export function NoDietsEmptyState({ onCreateClick }: { onCreateClick?: () => voi
 }
 
 export function NoChallengesEmptyState({ onCreateClick }: { onCreateClick?: () => void }) {
+  const { t } = useI18n();
   return (
     <EmptyState
       type="challenge"
-      title="Nenhum desafio ativo"
-      description="Desafios são uma ótima forma de manter a motivação! Crie um novo ou participe de desafios da comunidade."
+      title={t("states.emptyStates.challenges.title")}
+      description={t("states.emptyStates.challenges.description")}
       action={
         onCreateClick
           ? {
-              label: "Criar Desafio",
+              label: t("states.emptyStates.challenges.action"),
               onClick: onCreateClick,
             }
           : undefined
@@ -182,44 +186,48 @@ export function NoChallengesEmptyState({ onCreateClick }: { onCreateClick?: () =
 }
 
 export function NoHealthDataEmptyState() {
+  const { t } = useI18n();
   return (
     <EmptyState
       type="health"
-      title="Sem dados de saúde"
-      description="Comece registrando suas métricas de saúde para acompanhar sua evolução."
+      title={t("states.emptyStates.health.title")}
+      description={t("states.emptyStates.health.description")}
     />
   );
 }
 
 export function NoCheckinsEmptyState() {
+  const { t } = useI18n();
   return (
     <EmptyState
       type="checkin"
-      title="Nenhum check-in registrado"
-      description="Faça seu primeiro check-in diário para começar a acompanhar seu progresso!"
+      title={t("states.emptyStates.checkins.title")}
+      description={t("states.emptyStates.checkins.description")}
     />
   );
 }
 
 export function NoCommunityDataEmptyState() {
+  const { t } = useI18n();
   return (
     <EmptyState
       type="community"
-      title="Nenhum usuário no ranking"
-      description="A comunidade ainda está crescendo. Seja um dos primeiros a participar!"
+      title={t("states.emptyStates.community.title")}
+      description={t("states.emptyStates.community.description")}
     />
   );
 }
 
 export function NoSearchResultsEmptyState({ query }: { query?: string }) {
+  const { t } = useI18n();
   return (
     <EmptyState
       type="search"
-      title="Nenhum resultado encontrado"
+      title={t("states.noResults")}
       description={
         query
-          ? `Não encontramos resultados para "${query}". Tente outros termos de busca.`
-          : "Refine sua busca para encontrar o que procura."
+          ? t("states.emptyStates.search.withQuery", { query })
+          : t("states.emptyStates.search.noQuery")
       }
     />
   );
@@ -237,11 +245,12 @@ interface ErrorStateProps {
 }
 
 export function ErrorState({
-  title = "Algo deu errado",
-  description = "Não foi possível carregar os dados. Tente novamente.",
+  title,
+  description,
   onRetry,
   className,
 }: ErrorStateProps) {
+  const { t } = useI18n();
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -263,12 +272,12 @@ export function ErrorState({
         <FileQuestion className="h-16 w-16 text-destructive/30 mb-4" />
       </motion.div>
 
-      <h3 className="text-lg font-semibold text-foreground mb-2">{title}</h3>
-      <p className="text-sm text-muted-foreground max-w-md mb-6">{description}</p>
+      <h3 className="text-lg font-semibold text-foreground mb-2">{title ?? t("states.error")}</h3>
+      <p className="text-sm text-muted-foreground max-w-md mb-6">{description ?? t("states.errorDescription")}</p>
 
       {onRetry && (
         <Button onClick={onRetry} variant="outline">
-          Tentar Novamente
+          {t("actions.retry")}
         </Button>
       )}
     </motion.div>

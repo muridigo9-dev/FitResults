@@ -11,7 +11,8 @@ import {
 import { cn } from "@/lib/utils";
 import { Diet } from "@/types/content";
 import { MealEntry } from "@/types/checkin";
-import { MEAL_TYPE_LABELS } from "@/lib/constants";
+import { mealTypeLabel } from "@/lib/constants";
+import { useI18n } from "@/hooks/useI18n";
 import { Check, Utensils, Plus } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
@@ -24,6 +25,7 @@ interface QuickMealsProps {
 }
 
 export function QuickMeals({ diets, selectedMeals, onToggle, className }: QuickMealsProps) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [pendingSelections, setPendingSelections] = useState<Set<string>>(new Set());
   const [initialSelections, setInitialSelections] = useState<Set<string>>(new Set());
@@ -76,8 +78,8 @@ export function QuickMeals({ diets, selectedMeals, onToggle, className }: QuickM
     setOpen(false);
     
     if (added.length > 0 || removed.length > 0) {
-      toast.success("Refeições atualizadas", {
-        description: `${pendingSelections.size} refeição(ões) registrada(s)`,
+      toast.success(t("diets.mealsUpdated"), {
+        description: t("diets.mealsLogged", { count: pendingSelections.size }),
       });
     }
   };
@@ -98,9 +100,9 @@ export function QuickMeals({ diets, selectedMeals, onToggle, className }: QuickM
         "text-sm",
         completedCount > 0 ? "text-success font-medium" : "text-muted-foreground"
       )}>
-        {completedCount > 0 
-          ? `${completedCount} refeição(ões) registrada(s)` 
-          : "Nenhuma refeição registrada"}
+        {completedCount > 0
+          ? t("diets.mealsLogged", { count: completedCount })
+          : t("diets.noMealsLogged")}
       </span>
 
       <Sheet open={open} onOpenChange={(isOpen) => {
@@ -160,7 +162,7 @@ export function QuickMeals({ diets, selectedMeals, onToggle, className }: QuickM
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-0.5">
                           <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary">
-                            {MEAL_TYPE_LABELS[diet.category] || diet.category}
+                            {mealTypeLabel(t, diet.category)}
                           </span>
                         </div>
                         <p className="font-medium text-foreground truncate">{diet.title}</p>

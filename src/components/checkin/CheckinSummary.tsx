@@ -12,6 +12,7 @@ import {
   Sparkles
 } from "lucide-react";
 import { getMoodEmoji } from "@/lib/moodHelpers";
+import { useI18n } from "@/hooks/useI18n";
 
 interface CheckinSummaryProps {
   checkin: DailyCheckin;
@@ -30,48 +31,49 @@ interface CheckinSummaryProps {
 }
 
 export function CheckinSummary({ checkin, stats, className }: CheckinSummaryProps) {
+    const { t } = useI18n();
   const summaryItems = [
     {
       icon: Utensils,
-      label: "Alimentação",
-      value: `${stats.mealsCompleted} refeições`,
+      label: t("checkin.meals"),
+      value: t("summary.nutrition.mealCount", { count: stats.mealsCompleted }),
       completed: stats.mealsCompleted > 0,
       color: "text-primary",
     },
     {
       icon: Dumbbell,
-      label: "Treinos",
-      value: `${stats.workoutsCompleted} concluídos`,
+      label: t("workouts.title"),
+      value: t("summary.completedCount", { count: stats.workoutsCompleted }),
       completed: stats.workoutsCompleted > 0,
       color: "text-primary",
     },
     {
       icon: Trophy,
-      label: "Desafios",
+      label: t("navigation.challenges"),
       value: stats.tasksTotal > 0
         ? `${stats.tasksCompleted}/${stats.tasksTotal} tarefas`
-        : "Nenhum ativo",
+        : t("summary.noneActive"),
       completed: stats.tasksCompleted > 0,
       color: "text-primary",
     },
     {
       icon: Droplets,
-      label: "Água",
+      label: t("checkin.water"),
       value: `${(checkin.water.current / 1000).toFixed(1)}L de ${(checkin.water.goal / 1000).toFixed(1)}L`,
       completed: stats.waterProgress >= 100,
       color: "text-primary",
     },
     {
       icon: Smile,
-      label: "Humor",
+      label: t("checkin.mood"),
       value: getMoodEmoji(checkin.mood),
       completed: stats.hasMood,
       color: "text-primary",
     },
     {
       icon: Scale,
-      label: "Peso",
-      value: checkin.weight ? `${checkin.weight} kg` : "Não registrado",
+      label: t("checkin.weight"),
+      value: checkin.weight ? `${checkin.weight} kg` : t("checkin.notLogged"),
       completed: stats.hasWeight,
       color: "text-primary",
     },
@@ -163,7 +165,7 @@ export function CheckinSummary({ checkin, stats, className }: CheckinSummaryProp
       {checkin.notes && (
         <Card variant="default" className="animate-in-delay-7">
           <CardContent className="p-4">
-            <p className="text-sm text-muted-foreground mb-1">Observações</p>
+            <p className="text-sm text-muted-foreground mb-1">{t("checkin.notes")}</p>
             <p className="text-foreground">{checkin.notes}</p>
           </CardContent>
         </Card>
@@ -174,15 +176,15 @@ export function CheckinSummary({ checkin, stats, className }: CheckinSummaryProp
         <CardContent className="p-4 text-center">
           {overallProgress >= 80 ? (
             <p className="font-medium text-success">
-              🎉 Excelente dia! Continue assim!
+              🎉 {t("summary.motivation.high")}
             </p>
           ) : overallProgress >= 50 ? (
             <p className="font-medium text-primary">
-              💪 Bom progresso! Cada passo conta.
+              💪 {t("summary.motivation.medium")}
             </p>
           ) : (
             <p className="font-medium text-muted-foreground">
-              🌱 Todo começo é válido. Vamos lá!
+              🌱 {t("summary.motivation.low")}
             </p>
           )}
         </CardContent>

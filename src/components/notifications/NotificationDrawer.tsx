@@ -24,10 +24,11 @@ import {
 import { useNotifications, InAppNotification } from "@/hooks/useNotifications";
 import { useNotificationsEnabled } from "@/hooks/useSupportEnabled";
 import { formatDistanceToNow } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { useDateLocale } from "@/lib/dateLocale";
 
 export function NotificationDrawer() {
+    const dateLocale = useDateLocale();
     const navigate = useNavigate();
     const { isNotificationsEnabled, isLoading: isFlagLoading } = useNotificationsEnabled();
 
@@ -97,7 +98,7 @@ export function NotificationDrawer() {
                     </p>
                     <span className="text-[10px] text-muted-foreground flex items-center gap-1 whitespace-nowrap">
                         <Clock className="h-3 w-3" />
-                        {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true, locale: ptBR })}
+                        {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true, locale: dateLocale })}
                     </span>
                 </div>
                 <p className="text-xs text-muted-foreground line-clamp-2">

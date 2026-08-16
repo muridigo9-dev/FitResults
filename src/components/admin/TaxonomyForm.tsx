@@ -9,6 +9,7 @@ import { ImageUploader } from "@/components/admin/ImageUploader";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { TranslationFields } from "./TranslationFields";
 
 const COMMON_ICONS = [
     "dumbbell", "activity", "calendar", "heart", "timer", "trophy", "user",
@@ -28,6 +29,10 @@ interface TaxonomyFormProps {
 
 export function TaxonomyForm({ type, initialData, onSave, onCancel, isSubmitting }: TaxonomyFormProps) {
     const [name, setName] = useState(initialData?.name || "");
+    const [translations, setTranslations] = useState<Record<string, string>>({
+        nameEn: initialData?.name_en || initialData?.nameEn || "",
+        nameEs: initialData?.name_es || initialData?.nameEs || "",
+    });
     const [slug, setSlug] = useState(initialData?.slug || "");
     const [icon, setIcon] = useState(initialData?.icon || "");
     const [imageUrl, setImageUrl] = useState(initialData?.imageUrl || "");
@@ -71,6 +76,7 @@ export function TaxonomyForm({ type, initialData, onSave, onCancel, isSubmitting
         if (validate()) {
             const data: any = {
                 name,
+                ...translations,
                 slug,
                 colorCode,
                 sortOrder: Number(sortOrder),
@@ -130,6 +136,12 @@ export function TaxonomyForm({ type, initialData, onSave, onCancel, isSubmitting
                             />
                             {errors.name && <p className="text-xs text-destructive flex items-center gap-1 mt-1"><AlertCircle className="h-3 w-3" />{errors.name}</p>}
                         </div>
+
+                        <TranslationFields
+                            fields={[{ key: "name", label: "Nome", placeholderEn: "Ex: Strength", placeholderEs: "Ej: Fuerza" }]}
+                            values={translations}
+                            onChange={(key, value) => setTranslations((prev) => ({ ...prev, [key]: value }))}
+                        />
 
                         <div className="space-y-2">
                             <Label htmlFor="slug">Slug (URL/ID) *</Label>

@@ -109,6 +109,10 @@ async function fetchDiets(): Promise<Diet[]> { // Keeping name Diet[] for now as
         carbs: Number(diet.carbs) || 0,
         fat: Number(diet.fat) || 0,
       },
+      titleEn: (diet as any).title_en || "",
+      titleEs: (diet as any).title_es || "",
+      descriptionEn: (diet as any).description_en || "",
+      descriptionEs: (diet as any).description_es || "",
       isActive: diet.is_active ?? true,
       createdAt: diet.created_at || "",
       assigned_to_type: (diet as any).assigned_to_type || "global",
@@ -142,6 +146,10 @@ async function fetchWorkouts(): Promise<Workout[]> {
       id: workout.id,
       title: workout.title || "",
       description: workout.description || "",
+      titleEn: (workout as any).title_en || "",
+      titleEs: (workout as any).title_es || "",
+      descriptionEn: (workout as any).description_en || "",
+      descriptionEs: (workout as any).description_es || "",
       imageUrl: workout.image_url || "",
       imagePath: raw.image_path || undefined,
       category: workout.category || "",
@@ -158,6 +166,10 @@ async function fetchWorkouts(): Promise<Workout[]> {
             id: `db-${ex.id}-${ex.exercise_id}`,
             name: ex.name || "",
             description: ex.description || "",
+            nameEn: ex.name_en || "",
+            nameEs: ex.name_es || "",
+            descriptionEn: ex.description_en || "",
+            descriptionEs: ex.description_es || "",
             sets: Number(ex.sets) || 0,
             reps: displayReps,
             restSeconds: Number(ex.rest_seconds) || 0,
@@ -194,6 +206,12 @@ async function fetchLibraryExercises(): Promise<(Exercise & { muscleGroupIds: st
     name: ex.name || "",
     description: ex.description || "",
     instructions: ex.instructions || "",
+    nameEn: ex.name_en || "",
+    nameEs: ex.name_es || "",
+    descriptionEn: ex.description_en || "",
+    descriptionEs: ex.description_es || "",
+    instructionsEn: ex.instructions_en || "",
+    instructionsEs: ex.instructions_es || "",
     imageUrl: ex.image_url || "",
     equipment: ex.equipment || "none",
     difficulty: ex.difficulty || "intermediate",
@@ -226,6 +244,8 @@ async function fetchMuscleGroups(): Promise<MuscleGroup[]> {
   return (data || []).map(mg => ({
     id: mg.id,
     name: mg.name || "",
+    name_en: mg.name_en || "",
+    name_es: (mg as any).name_es || "",
     nameEn: mg.name_en || "",
     slug: mg.slug || "",
     category: (mg.category as MuscleGroup["category"]) || "upper",
@@ -256,6 +276,8 @@ async function fetchExerciseTypes(): Promise<ExpType[]> {
     id: t.id,
     slug: t.slug,
     name: t.name,
+    name_en: t.name_en,
+    name_es: t.name_es,
     icon: t.icon,
     sortOrder: t.sort_order,
     isActive: t.is_active !== false
@@ -273,6 +295,8 @@ async function fetchExerciseLevels(): Promise<ExerciseLevel[]> {
     id: l.id,
     slug: l.slug,
     name: l.name,
+    name_en: l.name_en,
+    name_es: l.name_es,
     colorCode: l.color_code,
     sortOrder: l.sort_order,
     isActive: l.is_active !== false
@@ -429,6 +453,10 @@ export function useAdminContent() {
           .update({
             title: data.title,
             description: data.description,
+            title_en: (data as any).titleEn || null,
+            title_es: (data as any).titleEs || null,
+            description_en: (data as any).descriptionEn || null,
+            description_es: (data as any).descriptionEs || null,
             image_url: data.imageUrl,
             image_path: data.imagePath || null, // Ensure null if empty to clear previous if changed
             category: data.category,
@@ -495,6 +523,10 @@ export function useAdminContent() {
           .insert({
             title: data.title,
             description: data.description,
+            title_en: (data as any).titleEn || null,
+            title_es: (data as any).titleEs || null,
+            description_en: (data as any).descriptionEn || null,
+            description_es: (data as any).descriptionEs || null,
             image_url: data.imageUrl,
             image_path: data.imagePath || null,
             category: data.category,
@@ -612,6 +644,11 @@ export function useAdminContent() {
       const workoutPayload = {
         title: data.title,
         description: data.description,
+        // Translations: null rather than "" so the app falls back to pt-BR
+        title_en: data.titleEn || null,
+        title_es: data.titleEs || null,
+        description_en: data.descriptionEn || null,
+        description_es: data.descriptionEs || null,
         image_url: data.imageUrl,
         image_path: data.imagePath || null, // Ensure null if empty
         category: data.category || "other",
@@ -687,6 +724,12 @@ export function useAdminContent() {
             exercise_id: linkedExerciseId,
             name: exercise.name,
             description: exercise.description || "",
+            // Carry the library translations onto the copy, so a workout built
+            // from translated exercises stays translated for students
+            name_en: exercise.nameEn || null,
+            name_es: exercise.nameEs || null,
+            description_en: exercise.descriptionEn || null,
+            description_es: exercise.descriptionEs || null,
             sets: Number(exercise.sets) || 1,
             // Constraint: Check Exclusive Execution (Time vs Reps)
             // If Execution Type is 'time': reps must be NULL, reps_list must be NULL, duration_seconds > 0
@@ -839,6 +882,10 @@ export function useAdminContent() {
           .update({
             name: data.name,
             description: data.description,
+            name_en: (data as any).nameEn || null,
+            name_es: (data as any).nameEs || null,
+            description_en: (data as any).descriptionEn || null,
+            description_es: (data as any).descriptionEs || null,
             cover_url: data.cover_url,
             duration_days: data.duration_days,
             is_active: data.is_active,
@@ -894,6 +941,10 @@ export function useAdminContent() {
           .insert({
             name: data.name,
             description: data.description,
+            name_en: (data as any).nameEn || null,
+            name_es: (data as any).nameEs || null,
+            description_en: (data as any).descriptionEn || null,
+            description_es: (data as any).descriptionEs || null,
             cover_url: data.cover_url,
             duration_days: data.duration_days,
             is_active: data.is_active,
@@ -980,6 +1031,13 @@ export function useAdminContent() {
         name: data.name,
         description: data.description,
         instructions: data.instructions,
+        // Translations: null rather than "" so the app falls back to pt-BR
+        name_en: data.nameEn || null,
+        name_es: data.nameEs || null,
+        description_en: data.descriptionEn || null,
+        description_es: data.descriptionEs || null,
+        instructions_en: data.instructionsEn || null,
+        instructions_es: data.instructionsEs || null,
         image_url: data.imageUrl,
         image_path: (data as any).imagePath,
         equipment: data.equipment || "none",
@@ -1041,7 +1099,8 @@ export function useAdminContent() {
     mutationFn: async ({ id, data }: { id?: string; data: Partial<MuscleGroup> }) => {
       const payload = {
         name: data.name,
-        name_en: data.nameEn || data.name,
+        name_en: data.nameEn || null,
+        name_es: (data as any).nameEs || null,
         slug: (data as any).slug,
         category: (data as any).category || 'upper',
         icon: data.icon,
@@ -1067,6 +1126,8 @@ export function useAdminContent() {
     mutationFn: async ({ id, data }: { id?: string; data: any }) => {
       const payload = {
         name: data.name,
+        name_en: data.nameEn || null,
+        name_es: data.nameEs || null,
         slug: data.slug,
         icon: data.icon,
         sort_order: data.sortOrder,
@@ -1089,6 +1150,8 @@ export function useAdminContent() {
     mutationFn: async ({ id, data }: { id?: string; data: any }) => {
       const payload = {
         name: data.name,
+        name_en: data.nameEn || null,
+        name_es: data.nameEs || null,
         slug: data.slug,
         color_code: data.colorCode,
         sort_order: data.sortOrder,

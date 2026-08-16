@@ -1,4 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
+import { useI18nSafe } from "./useI18nSafe";
+import { localizedField } from "@/lib/contentI18n";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Diet, Ingredient, PreparationStep, DietMacros } from "@/types/content";
@@ -23,13 +25,14 @@ export interface DietsData {
 export function useDiets(): DietsData {
   const { user } = useAuth();
   const { isEnabled } = useFeatureFlag('diets_enabled');
+  const { language, t } = useI18nSafe();
 
   // =====================================================
   // FETCH SYSTEM DIETS (Global + Assigned)
   // Simplified query - RLS handles visibility
   // =====================================================
   const { data: systemDiets = [], isLoading: loadingSystem, error: errorSystem } = useQuery({
-    queryKey: ["diets", "system", user?.id],
+    queryKey: ["diets", "system", user?.id, language],
     enabled: !!user && isEnabled,
     staleTime: 1000 * 60 * 5, // 5 minutes
     refetchOnMount: "always",
@@ -127,8 +130,8 @@ export function useDiets(): DietsData {
 
         return {
           id: diet.id,
-          title: diet.title || "Dieta sem título",
-          description: diet.description || "",
+          title: localizedField(diet, "title", language) || t("diets.untitled"),
+          description: localizedField(diet, "description", language),
           imageUrl: finalImageUrl || "",
           category: diet.category || "other",
           ingredients: [...legacyIngredients, ...smartIngredients],
@@ -188,7 +191,7 @@ export function useDiets(): DietsData {
 
         return {
           id: diet.id,
-          title: diet.title || "Dieta sem título",
+          title: diet.title || t("diets.untitled"),
           description: diet.description || "",
           imageUrl: diet.image_url || "", // ✅ Empty string if no image
           category: diet.category || "other",

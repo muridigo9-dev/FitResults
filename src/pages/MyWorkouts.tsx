@@ -29,16 +29,11 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-const WORKOUT_CATEGORY_LABELS: Record<string, string> = {
-  strength: "Força",
-  cardio: "Cardio",
-  flexibility: "Flexibilidade",
-  hiit: "HIIT",
-  functional: "Funcional",
-};
+import { useI18n } from "@/hooks/useI18n";
+import { workoutCategoryLabel } from "@/lib/constants";
 
 export default function MyWorkouts() {
+  const { t } = useI18n();
   const {
     settings,
     allWorkouts,
@@ -58,10 +53,10 @@ export default function MyWorkouts() {
   const handleSave = (workoutData: Omit<UserWorkout, "id" | "createdAt" | "contentOrigin" | "ownerUserId">) => {
     if (editingWorkout) {
       updateUserWorkout(editingWorkout.id, workoutData);
-      toast.success("Treino atualizado com sucesso!");
+      toast.success(t("workouts.toast.updated"));
     } else {
       addUserWorkout(workoutData);
-      toast.success("Treino criado com sucesso!");
+      toast.success(t("workouts.toast.created"));
     }
     setShowForm(false);
     setEditingWorkout(null);
@@ -75,7 +70,7 @@ export default function MyWorkouts() {
   const handleDelete = () => {
     if (deletingId) {
       deleteUserWorkout(deletingId);
-      toast.success("Treino excluído!");
+      toast.success(t("workouts.toast.deleted"));
       setDeletingId(null);
     }
   };
@@ -95,7 +90,7 @@ export default function MyWorkouts() {
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold text-foreground">
-              {editingWorkout ? "Editar Treino" : "Novo Treino"}
+              {editingWorkout ? t("workouts.edit") : t("workouts.newWorkout")}
             </h1>
           </div>
           <WorkoutForm
@@ -117,15 +112,15 @@ export default function MyWorkouts() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Treinos</h1>
+            <h1 className="text-2xl font-bold text-foreground">{t("workouts.title")}</h1>
             <p className="text-muted-foreground">
-              Explore treinos e alcance seus objetivos
+              {t("workouts.subtitle")}
             </p>
           </div>
           {settings.allowUserWorkoutCreation && (
             <Button onClick={() => setShowForm(true)} className="gap-2">
               <Plus className="h-4 w-4" />
-              Criar Treino
+              {t("workouts.createWorkout")}
             </Button>
           )}
         </div>
@@ -135,11 +130,11 @@ export default function MyWorkouts() {
           <TabsList className="grid w-full max-w-md grid-cols-2">
             <TabsTrigger value="all" className="gap-2">
               <Dumbbell className="h-4 w-4" />
-              Todos ({systemWorkouts.length})
+              {t("workouts.filters.all")} ({systemWorkouts.length})
             </TabsTrigger>
             <TabsTrigger value="mine" className="gap-2">
               <User className="h-4 w-4" />
-              Meus ({userWorkouts.length})
+              {t("workouts.filters.mine")} ({userWorkouts.length})
             </TabsTrigger>
           </TabsList>
 
@@ -190,15 +185,15 @@ export default function MyWorkouts() {
       <AlertDialog open={!!deletingId} onOpenChange={() => setDeletingId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir treino?</AlertDialogTitle>
+            <AlertDialogTitle>{t("workouts.deleteDialog.title")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação não pode ser desfeita. O treino será removido permanentemente.
+              {t("workouts.deleteDialog.description")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel>{t("actions.cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
-              Excluir
+              {t("actions.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -209,6 +204,7 @@ export default function MyWorkouts() {
 
 // Empty state for system workouts
 function EmptyWorkoutsState() {
+  const { t } = useI18n();
   return (
     <Card className="border-dashed">
       <CardContent className="flex flex-col items-center justify-center py-16">
@@ -216,10 +212,10 @@ function EmptyWorkoutsState() {
           <Dumbbell className="h-8 w-8 text-muted-foreground" />
         </div>
         <h3 className="font-semibold text-foreground mb-2">
-          Nenhum treino disponível
+          {t("workouts.empty.systemTitle")}
         </h3>
         <p className="text-sm text-muted-foreground text-center max-w-sm">
-          Os treinos serão adicionados em breve pelo administrador.
+          {t("workouts.empty.systemDescription")}
         </p>
       </CardContent>
     </Card>
@@ -228,6 +224,7 @@ function EmptyWorkoutsState() {
 
 // Empty state for user workouts
 function EmptyUserWorkoutsState({ canCreate, onCreate }: { canCreate: boolean; onCreate: () => void }) {
+  const { t } = useI18n();
   return (
     <Card className="border-dashed">
       <CardContent className="flex flex-col items-center justify-center py-16">
@@ -235,17 +232,17 @@ function EmptyUserWorkoutsState({ canCreate, onCreate }: { canCreate: boolean; o
           <Dumbbell className="h-8 w-8 text-primary" />
         </div>
         <h3 className="font-semibold text-foreground mb-2">
-          Crie seus próprios treinos
+          {t("workouts.empty.userTitle")}
         </h3>
         <p className="text-sm text-muted-foreground text-center max-w-sm mb-4">
           {canCreate
-            ? "Monte treinos personalizados com seus exercícios favoritos."
-            : "A criação de treinos está desabilitada no momento."}
+            ? t("workouts.createHint")
+            : t("workouts.empty.creationDisabled")}
         </p>
         {canCreate && (
           <Button onClick={onCreate} className="gap-2">
             <Plus className="h-4 w-4" />
-            Criar Primeiro Treino
+            {t("workouts.empty.createFirst")}
           </Button>
         )}
       </CardContent>
@@ -263,7 +260,8 @@ interface WorkoutCardProps {
 }
 
 function WorkoutCard({ workout, canEdit, estimatedDuration, onEdit, onDelete }: WorkoutCardProps) {
-  const categoryLabel = WORKOUT_CATEGORY_LABELS[workout.category || ""] || workout.category;
+  const { t } = useI18n();
+  const categoryLabel = workoutCategoryLabel(t, workout.category);
   const defaultImage = "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400&q=80";
 
   return (
@@ -294,7 +292,7 @@ function WorkoutCard({ workout, canEdit, estimatedDuration, onEdit, onDelete }: 
             className="absolute top-3 right-3 gap-1 bg-primary/90 text-primary-foreground border-0"
           >
             <User className="h-3 w-3" />
-            Meu
+            {t("workouts.filters.mine")}
           </Badge>
         )}
 
@@ -319,19 +317,19 @@ function WorkoutCard({ workout, canEdit, estimatedDuration, onEdit, onDelete }: 
           <StatItem
             icon={Clock}
             value={`${estimatedDuration}`}
-            label="min"
+            label={t("units.minutes")}
             color="text-blue-500"
           />
           <StatItem
             icon={Target}
             value={workout.exercises.length.toString()}
-            label="exerc."
+            label={t("workouts.exercisesShort")}
             color="text-green-500"
           />
           <StatItem
             icon={Zap}
             value={workout.exercises.reduce((acc, e) => acc + e.sets, 0).toString()}
-            label="séries"
+            label={t("workouts.setsShort")}
             color="text-orange-500"
           />
         </div>
@@ -346,7 +344,7 @@ function WorkoutCard({ workout, canEdit, estimatedDuration, onEdit, onDelete }: 
               onClick={onEdit}
             >
               <Edit2 className="h-3.5 w-3.5" />
-              Editar
+              {t("actions.edit")}
             </Button>
             <Button
               variant="outline"

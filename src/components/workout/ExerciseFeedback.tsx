@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import type { ExerciseFeedbackMood, LikeDislike, SessionFeedbackFormData } from "@/types/workout";
 import { MOOD_LABELS, MOOD_COLORS, MOOD_ICONS } from "@/types/workout";
+import { useI18n } from "@/hooks/useI18n";
 
 interface ExerciseFeedbackProps {
   onSubmit: (feedback: SessionFeedbackFormData) => void;
@@ -23,6 +24,7 @@ export function ExerciseFeedback({
   showRating = true,
   className,
 }: ExerciseFeedbackProps) {
+    const { t } = useI18n();
   const [mood, setMood] = useState<ExerciseFeedbackMood | undefined>();
   const [rating, setRating] = useState<number | undefined>();
   const [likeDislike, setLikeDislike] = useState<LikeDislike | undefined>();
@@ -81,14 +83,14 @@ export function ExerciseFeedback({
           onClick={() => setLikeDislike(likeDislike === "dislike" ? undefined : "dislike")}
         >
           <ThumbsDown className="h-5 w-5" />
-          Não gostei
+          {t("execution.feedback.dislike")}
         </Button>
       </div>
 
       {/* Mood Meter */}
       <div className="space-y-3">
         <p className="text-sm text-center text-muted-foreground">
-          Dificuldade do exercício
+          {t("execution.feedback.difficulty")}
         </p>
         <div className="flex justify-center gap-2">
           {moods.map((m) => (
@@ -120,7 +122,7 @@ export function ExerciseFeedback({
       {showRating && (
         <div className="space-y-3">
           <p className="text-sm text-center text-muted-foreground">
-            Avaliação geral
+            {t("execution.feedback.overallRating")}
           </p>
           <div className="flex justify-center gap-1">
             {[1, 2, 3, 4, 5].map((star) => (
@@ -154,11 +156,11 @@ export function ExerciseFeedback({
               onClick={() => setShowCommentInput(true)}
             >
               <MessageSquare className="h-4 w-4 mr-2" />
-              Adicionar comentário
+              {t("execution.feedback.addComment")}
             </Button>
           ) : (
             <Textarea
-              placeholder="Alguma observação sobre o exercício?"
+              placeholder={t("execution.feedback.exercisePlaceholder")}
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               rows={2}
@@ -313,6 +315,7 @@ export function WorkoutCompleteFeedback({
   exercisesCompleted,
   className,
 }: WorkoutCompleteFeedbackProps) {
+    const { t } = useI18n();
   const [mood, setMood] = useState<ExerciseFeedbackMood | undefined>();
   const [rating, setRating] = useState<number | undefined>();
   const [comment, setComment] = useState("");
@@ -338,7 +341,7 @@ export function WorkoutCompleteFeedback({
       {/* Success Header */}
       <div className="text-center space-y-2">
         <div className="text-6xl animate-bounce">🎉</div>
-        <h2 className="text-2xl font-bold">Treino Concluído!</h2>
+        <h2 className="text-2xl font-bold">{t("execution.workoutComplete")}</h2>
         {workoutName && (
           <p className="text-muted-foreground">{workoutName}</p>
         )}
@@ -355,7 +358,7 @@ export function WorkoutCompleteFeedback({
         {exercisesCompleted !== undefined && (
           <div className="text-center p-4 bg-muted rounded-xl">
             <p className="text-3xl font-bold">{exercisesCompleted}</p>
-            <p className="text-xs text-muted-foreground">exercícios</p>
+            <p className="text-xs text-muted-foreground">{t("workouts.exercises").toLowerCase()}</p>
           </div>
         )}
       </div>
@@ -418,7 +421,7 @@ export function WorkoutCompleteFeedback({
 
       {/* Comment */}
       <Textarea
-        placeholder="Alguma observação sobre o treino? (opcional)"
+        placeholder={t("execution.feedback.workoutPlaceholder")}
         value={comment}
         onChange={(e) => setComment(e.target.value)}
         rows={3}

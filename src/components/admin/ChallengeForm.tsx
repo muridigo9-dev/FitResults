@@ -24,6 +24,7 @@ import { ContentAssignmentSelector, ContentAssignment, AssignmentType } from "./
 import { VisibilitySelector } from "./VisibilitySelector";
 import type { VisibilityType } from "@/hooks/useUnifiedVisibility";
 import { TaskContentSelector } from "./TaskContentSelector";
+import { TranslationFields } from "./TranslationFields";
 
 interface ChallengeFormProps {
   challenge?: Challenge;
@@ -49,6 +50,12 @@ const TASK_UNITS: Record<string, string[]> = {
 
 export function ChallengeForm({ challenge, onSave, onCancel }: ChallengeFormProps) {
   const [name, setName] = useState(challenge?.name || "");
+  const [translations, setTranslations] = useState<Record<string, string>>({
+    nameEn: (challenge as any)?.nameEn || "",
+    nameEs: (challenge as any)?.nameEs || "",
+    descriptionEn: (challenge as any)?.descriptionEn || "",
+    descriptionEs: (challenge as any)?.descriptionEs || "",
+  });
   const [description, setDescription] = useState(challenge?.description || "");
   const [coverUrl, setCoverUrl] = useState(challenge?.cover_url || "");
   // const [imagePath, setImagePath] = useState(challenge?.imagePath || ""); // Not used in new schema directly?
@@ -195,6 +202,7 @@ export function ChallengeForm({ challenge, onSave, onCancel }: ChallengeFormProp
     onSave({
       name,
       description,
+      ...translations,
       cover_url: coverUrl,
       duration_days: durationDays,
       days,
@@ -256,6 +264,14 @@ export function ChallengeForm({ challenge, onSave, onCancel }: ChallengeFormProp
               rows={2}
             />
           </div>
+          <TranslationFields
+            fields={[
+              { key: "name", label: "Nome do Desafio", placeholderEn: "Ex: 30-Day Challenge", placeholderEs: "Ej: Reto de 30 Días" },
+              { key: "description", label: "Descrição", multiline: true, placeholderEn: "Describe the goal of the challenge...", placeholderEs: "Describe el objetivo del reto..." },
+            ]}
+            values={translations}
+            onChange={(key, value) => setTranslations((prev) => ({ ...prev, [key]: value }))}
+          />
           <div className="space-y-2">
             <Label>Imagem de Capa</Label>
             <ImageUploader

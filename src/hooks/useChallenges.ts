@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Challenge, ChallengeDay, ChallengeTask, UserChallengeParticipation } from "@/types/challenges";
 import { toast } from "sonner";
+import { useI18nSafe } from "./useI18nSafe";
+import { localizedField } from "@/lib/contentI18n";
 
 export interface ChallengesHook {
   challenges: Challenge[];
@@ -18,12 +20,13 @@ export interface ChallengesHook {
 }
 
 export function useChallenges(): ChallengesHook {
+  const { language } = useI18nSafe();
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
   // 1. Fetch Available Challenges (Basic Info)
   const { data: challenges = [], isLoading: loadingChallenges } = useQuery({
-    queryKey: ["challenges-list", user?.id],
+    queryKey: ["challenges-list", user?.id, language],
     enabled: !!user,
     queryFn: async () => {
       // Use the new RPC
@@ -36,8 +39,8 @@ export function useChallenges(): ChallengesHook {
       // Map basic info to Challenge type (partial)
       return (data || []).map((c: any) => ({
         id: c.id,
-        name: c.name,
-        description: c.description,
+        name: localizedField(c, "name", language),
+        description: localizedField(c, "description", language),
         cover_url: c.cover_url,
         type: c.type as any,
         duration_days: c.duration_days,

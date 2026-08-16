@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Workout, Exercise } from "@/types/content";
 import { useFeatureFlag } from "@/contexts/FeatureFlagsContext";
+import { useI18nSafe } from "./useI18nSafe";
+import { localizedField, localizedFieldFrom } from "@/lib/contentI18n";
 import type { BlockReason } from "./useUserCapabilities";
 
 export interface WorkoutsData {
@@ -20,13 +22,14 @@ export interface WorkoutsData {
 export function useWorkouts(): WorkoutsData {
   const { user } = useAuth();
   const { isEnabled } = useFeatureFlag('training_mode_enabled');
+  const { language, t } = useI18nSafe();
 
   // =====================================================
   // FETCH SYSTEM WORKOUTS (Global + Assigned)
   // Simplified query - RLS handles visibility
   // =====================================================
   const { data: systemWorkouts = [], isLoading: loadingSystem, error: errorSystem } = useQuery({
-    queryKey: ["workouts", "system", user?.id],
+    queryKey: ["workouts", "system", user?.id, language],
     enabled: !!user, // Removed limit by flag
     staleTime: 1000 * 60 * 5, // 5 minutes
     refetchOnMount: "always",
@@ -55,7 +58,9 @@ export function useWorkouts(): WorkoutsData {
         workouts.map(async (workout) => {
           const { data: exercises } = await supabase
             .from("workout_exercises")
-            .select("*, exercise:exercises(image_url, image_path, video_url)") // Join to get library metadata
+            // Join to get library metadata: media, plus the translated name and
+            // description to fall back on when this row has none of its own.
+            .select("*, exercise:exercises(image_url, image_path, video_url, name, name_en, name_es, description, description_en, description_es)")
             .eq("workout_id", workout.id)
             .order("exercise_order", { ascending: true }); // Fixed column name
 
@@ -82,8 +87,8 @@ export function useWorkouts(): WorkoutsData {
             return {
               id: ex.id,
               exercise_id: ex.exercise_id, // Important for linking
-              name: ex.name || "",
-              description: ex.description || "",
+              name: localizedFieldFrom([ex, ex.exercise], "name", language),
+              description: localizedFieldFrom([ex, ex.exercise], "description", language),
               sets: ex.sets || 0,
               reps: displayReps,
               duration: ex.duration_seconds || 0,
@@ -117,8 +122,8 @@ export function useWorkouts(): WorkoutsData {
 
           return {
             id: workout.id,
-            title: workout.title || "Treino sem título",
-            description: workout.description || "",
+            title: localizedField(workout, "title", language) || t("workouts.untitled"),
+            description: localizedField(workout, "description", language),
             imageUrl: finalImageUrl,
             category: workout.category || "other",
             difficulty: "intermediate", // Default as not in DB
@@ -140,7 +145,7 @@ export function useWorkouts(): WorkoutsData {
   // FETCH USER WORKOUTS (User-created content)
   // =====================================================
   const { data: userWorkouts = [], isLoading: loadingUser, error: errorUser } = useQuery({
-    queryKey: ["workouts", "user", user?.id],
+    queryKey: ["workouts", "user", user?.id, language],
     enabled: !!user, // Removed limit by flag
     staleTime: 1000 * 60 * 5,
     queryFn: async () => {
@@ -182,7 +187,7 @@ export function useWorkouts(): WorkoutsData {
 
         return {
           id: workout.id,
-          title: workout.title || "Treino sem título",
+          title: workout.title || t("workouts.untitled"),
           description: workout.description || "",
           imageUrl: finalImageUrl,
           category: workout.category || "other",

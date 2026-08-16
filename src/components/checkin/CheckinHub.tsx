@@ -26,6 +26,7 @@ import { QuickChallenges } from "./QuickChallenges";
 import { QuickWeight } from "./QuickWeight";
 import { QuickHabits } from "./QuickHabits";
 import { useConfetti } from "@/hooks/useConfetti";
+import { useI18n } from "@/hooks/useI18n";
 
 interface CheckinHubProps {
   checkin: DailyCheckin;
@@ -58,11 +59,11 @@ interface CheckinHubProps {
   className?: string;
 }
 
-const MOOD_LABELS: Record<string, string> = {
-  great: "😄 Ótimo",
-  good: "🙂 Bem",
-  okay: "😐 Ok",
-  bad: "😞 Mal",
+const MOOD_EMOJI: Record<string, string> = {
+  great: "😄",
+  good: "🙂",
+  okay: "😐",
+  bad: "😞",
 };
 
 export function CheckinHub({
@@ -85,6 +86,7 @@ export function CheckinHub({
   onStartWizard,
   className,
 }: CheckinHubProps) {
+  const { t, language } = useI18n();
   const { fireConfetti } = useConfetti();
   const hasTriggeredConfetti = useRef(false);
 
@@ -99,16 +101,16 @@ export function CheckinHub({
     }
   }, [completionStats.allGoalsComplete, fireConfetti]);
 
-  const today = new Date().toLocaleDateString("pt-BR", {
+  const today = new Date().toLocaleDateString(language, {
     weekday: "long",
     day: "numeric",
     month: "long",
   });
 
   const statusConfig = {
-    not_started: { label: "Não iniciado", color: "bg-muted text-muted-foreground" },
-    partial: { label: "Em andamento", color: "bg-warning/10 text-warning" },
-    complete: { label: "Completo", color: "bg-success/10 text-success" },
+    not_started: { label: t("checkin.status.notStarted"), color: "bg-muted text-muted-foreground" },
+    partial: { label: t("checkin.status.inProgress"), color: "bg-warning/10 text-warning" },
+    complete: { label: t("checkin.status.complete"), color: "bg-success/10 text-success" },
   };
   const status = statusConfig[checkin.status];
 
@@ -123,8 +125,8 @@ export function CheckinHub({
                 <PartyPopper className="h-6 w-6 text-success" />
               </div>
               <div className="flex-1">
-                <h2 className="font-semibold text-foreground">Parabéns! 🎉</h2>
-                <p className="text-sm text-muted-foreground">Você completou todas as metas de hoje!</p>
+                <h2 className="font-semibold text-foreground">{t("checkin.congrats")} 🎉</h2>
+                <p className="text-sm text-muted-foreground">{t("checkin.allGoalsMet")}</p>
               </div>
             </div>
           </CardContent>
@@ -153,7 +155,7 @@ export function CheckinHub({
         {/* Alimentação */}
         <CheckinHubCard
           icon={Utensils}
-          title="Alimentação"
+          title={t("checkin.meals")}
           status={`${completionStats.mealsCompleted} refeição(ões)`}
           statusColor={completionStats.mealsCompleted > 0 ? "text-success" : "text-muted-foreground"}
           completed={completionStats.mealsCompleted > 0}
@@ -169,7 +171,7 @@ export function CheckinHub({
         {/* Treino */}
         <CheckinHubCard
           icon={Dumbbell}
-          title="Treino"
+          title={t("dashboard.workout")}
           status={`${completionStats.workoutsCompleted} treino(s)`}
           statusColor={completionStats.workoutsCompleted > 0 ? "text-success" : "text-muted-foreground"}
           completed={completionStats.workoutsCompleted > 0}
@@ -185,7 +187,7 @@ export function CheckinHub({
         {/* Água */}
         <CheckinHubCard
           icon={Droplets}
-          title="Água"
+          title={t("checkin.water")}
           status={`${(checkin.water.current / 1000).toFixed(1)}L / ${(checkin.water.goal / 1000).toFixed(1)}L`}
           statusColor={completionStats.waterProgress >= 100 ? "text-success" : "text-muted-foreground"}
           completed={completionStats.waterProgress >= 100}
@@ -200,8 +202,8 @@ export function CheckinHub({
         {/* Desafios */}
         <CheckinHubCard
           icon={Trophy}
-          title="Desafios"
-          status={activeChallenge ? `Dia ${currentChallengeDay?.dayNumber || 1}` : "Nenhum desafio"}
+          title={t("navigation.challenges")}
+          status={activeChallenge ? t("checkin.activeDay", { day: currentChallengeDay?.dayNumber || 1 }) : t("checkin.noChallenge")}
           statusColor={completionStats.tasksCompleted > 0 ? "text-success" : "text-muted-foreground"}
           completed={completionStats.tasksCompleted === (currentChallengeDay?.tasks.length || 0) && completionStats.tasksCompleted > 0}
           className="animate-in-delay-2"
@@ -218,7 +220,7 @@ export function CheckinHub({
         {habitsEnabled && availableHabits.length > 0 && (
           <CheckinHubCard
             icon={Target}
-            title="Hábitos"
+            title={t("navigation.habits")}
             status={`${completionStats.habitsCompleted}/${completionStats.habitsTotal} hábitos`}
             statusColor={completionStats.habitsCompleted > 0 ? "text-success" : "text-muted-foreground"}
             completed={completionStats.habitsCompleted === completionStats.habitsTotal && completionStats.habitsTotal > 0}
@@ -236,8 +238,8 @@ export function CheckinHub({
         {/* Mood */}
         <CheckinHubCard
           icon={Smile}
-          title="Humor"
-          status={checkin.mood ? MOOD_LABELS[checkin.mood] : "Como você está?"}
+          title={t("checkin.mood")}
+          status={checkin.mood ? `${MOOD_EMOJI[checkin.mood]} ${t(`checkin.moods.${checkin.mood}`)}` : t("checkin.howAreYouFeeling")}
           statusColor={completionStats.hasMood ? "text-success" : "text-muted-foreground"}
           completed={completionStats.hasMood}
           className="animate-in-delay-3"
@@ -251,8 +253,8 @@ export function CheckinHub({
         {/* Peso */}
         <CheckinHubCard
           icon={Scale}
-          title="Peso"
-          status={checkin.weight ? `${checkin.weight} kg` : "Não registrado"}
+          title={t("checkin.weight")}
+          status={checkin.weight ? `${checkin.weight} kg` : t("checkin.notLogged")}
           statusColor={completionStats.hasWeight ? "text-success" : "text-muted-foreground"}
           completed={completionStats.hasWeight}
           className="animate-in-delay-3"
@@ -273,7 +275,7 @@ export function CheckinHub({
             className="w-full justify-between text-muted-foreground hover:text-foreground"
             onClick={onStartWizard}
           >
-            <span>Revisar meu dia completo</span>
+            <span>{t("checkin.reviewFullDay")}</span>
             <ArrowRight className="h-4 w-4" />
           </Button>
         </CardContent>

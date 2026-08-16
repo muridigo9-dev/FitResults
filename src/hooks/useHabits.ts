@@ -2,6 +2,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { useI18nSafe } from "./useI18nSafe";
+import { localizedField } from "@/lib/contentI18n";
 
 export interface Habit {
   id: string;
@@ -138,10 +140,11 @@ export function useAdminHabits() {
  */
 export function useUserHabits() {
   const { user } = useAuth();
+  const { language } = useI18nSafe();
   const queryClient = useQueryClient();
 
   const { data: habits, isLoading, error, refetch } = useQuery({
-    queryKey: ["user-habits", user?.id],
+    queryKey: ["user-habits", user?.id, language],
     queryFn: async () => {
       if (!user?.id) return [];
 
@@ -154,7 +157,10 @@ export function useUserHabits() {
         .order("display_order", { ascending: true });
 
       if (error) throw error;
-      return data as Habit[];
+      return (data || []).map((habit: any) => ({
+        ...habit,
+        name: localizedField(habit, "name", language),
+      })) as Habit[];
     },
     enabled: !!user?.id,
   });

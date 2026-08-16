@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Flame, Beef, Wheat, Droplets } from "lucide-react";
 import { Diet } from "@/types/content";
 import { useSmartPortions } from "@/hooks/useSmartPortions";
+import { useI18n } from "@/hooks/useI18n";
 
 interface ConsumptionModalProps {
     isOpen: boolean;
@@ -27,6 +28,7 @@ interface ConsumptionModalProps {
 }
 
 export function ConsumptionModal({ isOpen, onClose, onConfirm, dish }: ConsumptionModalProps) {
+    const { t } = useI18n();
     const { suggestedMacros, multiplier: smartMultiplier, isSmart } = useSmartPortions(dish);
 
     // Local state for adjustment (percentage of the reference portion)
@@ -56,9 +58,9 @@ export function ConsumptionModal({ isOpen, onClose, onConfirm, dish }: Consumpti
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle>Registrar Consumo</DialogTitle>
+                    <DialogTitle>{t("nutrition.consumption.title")}</DialogTitle>
                     <DialogDescription>
-                        Quanto você comeu do prato <span className="font-semibold text-foreground">{dish.title}</span>?
+                        {t("nutrition.consumption.question")} <span className="font-semibold text-foreground">{dish.title}</span>?
                     </DialogDescription>
                 </DialogHeader>
 
@@ -66,16 +68,16 @@ export function ConsumptionModal({ isOpen, onClose, onConfirm, dish }: Consumpti
                     {/* Status Badge */}
                     <div className="flex justify-center">
                         <Badge variant={isSmart ? "default" : "secondary"} className="text-sm px-3 py-1">
-                            {isSmart ? "Porção Inteligente Sugerida" : "Porção Padrão"}
+                            {isSmart ? t("nutrition.consumption.smartPortion") : t("nutrition.consumption.standardPortion")}
                         </Badge>
                     </div>
 
                     {/* Slider */}
                     <div className="space-y-4">
                         <div className="flex justify-between items-center px-1">
-                            <span className="text-sm text-muted-foreground">Menos</span>
+                            <span className="text-sm text-muted-foreground">{t("nutrition.consumption.less")}</span>
                             <span className="font-bold text-2xl text-primary">{percentage}%</span>
-                            <span className="text-sm text-muted-foreground">Mais</span>
+                            <span className="text-sm text-muted-foreground">{t("nutrition.consumption.more")}</span>
                         </div>
                         <Slider
                             value={[percentage]}
@@ -86,7 +88,7 @@ export function ConsumptionModal({ isOpen, onClose, onConfirm, dish }: Consumpti
                             className="py-2"
                         />
                         <p className="text-center text-xs text-muted-foreground">
-                            Ajuste se você comeu mais ou menos que o sugerido.
+                            {t("nutrition.consumption.adjustHint")}
                         </p>
                     </div>
 
@@ -101,10 +103,10 @@ export function ConsumptionModal({ isOpen, onClose, onConfirm, dish }: Consumpti
 
                 <DialogFooter className="flex gap-2 sm:gap-0">
                     <Button variant="outline" onClick={onClose} className="flex-1 sm:flex-none">
-                        Cancelar
+                        {t("actions.cancel")}
                     </Button>
                     <Button onClick={() => onConfirm(finalMacros)} className="flex-1 sm:flex-none">
-                        Confirmar Consumo
+                        {t("nutrition.consumption.confirm")}
                     </Button>
                 </DialogFooter>
             </DialogContent>

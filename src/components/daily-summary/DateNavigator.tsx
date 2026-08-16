@@ -1,5 +1,4 @@
 import { format, addDays, subDays, addWeeks, subWeeks, addMonths, subMonths, addYears, subYears, isSameDay, isSameWeek, isSameMonth, isSameYear, startOfWeek, endOfWeek } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -9,6 +8,8 @@ import {
     PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { useDateLocale } from "@/lib/dateLocale";
+import { useI18n } from "@/hooks/useI18n";
 
 interface DateNavigatorProps {
     date: Date;
@@ -17,6 +18,8 @@ interface DateNavigatorProps {
 }
 
 export function DateNavigator({ date, onChange, period = "day" }: DateNavigatorProps) {
+    const dateLocale = useDateLocale();
+    const { t } = useI18n();
     const today = new Date();
 
     const isCurrent = () => {
@@ -28,22 +31,22 @@ export function DateNavigator({ date, onChange, period = "day" }: DateNavigatorP
     };
 
     const getLabel = () => {
-        if (period === "day") return format(date, "EEEE", { locale: ptBR });
+        if (period === "day") return format(date, "EEEE", { locale: dateLocale });
         if (period === "week") {
             const start = startOfWeek(date, { weekStartsOn: 1 });
             const end = endOfWeek(date, { weekStartsOn: 1 });
-            return `Semana de ${format(start, "d 'de' MMM")} - ${format(end, "d 'de' MMM")}`;
+            return t("summary.weekOf", { start: format(start, "d MMM", { locale: dateLocale }), end: format(end, "d MMM", { locale: dateLocale }) });
         }
-        if (period === "month") return "Resumo Mensal";
-        if (period === "year") return "Resumo Anual";
+        if (period === "month") return t("summary.monthly");
+        if (period === "year") return t("summary.yearly");
         return "";
     };
 
     const getTitle = () => {
-        if (period === "day") return format(date, "d 'de' MMMM", { locale: ptBR });
-        if (period === "week") return format(date, "MMMM 'de' yyyy", { locale: ptBR });
-        if (period === "month") return format(date, "MMMM 'de' yyyy", { locale: ptBR });
-        if (period === "year") return format(date, "yyyy", { locale: ptBR });
+        if (period === "day") return format(date, "d MMMM", { locale: dateLocale });
+        if (period === "week") return format(date, "MMMM yyyy", { locale: dateLocale });
+        if (period === "month") return format(date, "MMMM yyyy", { locale: dateLocale });
+        if (period === "year") return format(date, "yyyy", { locale: dateLocale });
         return "";
     };
 
@@ -74,7 +77,7 @@ export function DateNavigator({ date, onChange, period = "day" }: DateNavigatorP
                         </h2>
                         {isCurrent() && (
                             <span className="shrink-0 text-[8px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-full uppercase font-black tracking-widest whitespace-nowrap">
-                                {period === "day" ? "Hoje" : period === "week" ? "Esta Semana" : period === "month" ? "Este Mês" : "Este Ano"}
+                                {period === "day" ? t("checkin.today") : period === "week" ? t("summary.thisWeek") : period === "month" ? t("summary.thisMonth") : t("summary.thisYear")}
                             </span>
                         )}
                     </div>
@@ -115,7 +118,7 @@ export function DateNavigator({ date, onChange, period = "day" }: DateNavigatorP
                                 selected={date}
                                 onSelect={(d) => d && onChange(d)}
                                 initialFocus
-                                locale={ptBR}
+                                locale={dateLocale}
                             />
                         </PopoverContent>
                     </Popover>

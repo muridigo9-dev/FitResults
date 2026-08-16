@@ -111,6 +111,10 @@ export function useAdminDietPlans() {
             const planPayload = {
                 title: data.title,
                 description: data.description,
+                title_en: (data as any).titleEn || null,
+                title_es: (data as any).titleEs || null,
+                description_en: (data as any).descriptionEn || null,
+                description_es: (data as any).descriptionEs || null,
                 objective: data.objective,
                 objective_badge: data.objectiveBadge,
                 duration_days: data.durationDays,

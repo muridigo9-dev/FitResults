@@ -115,7 +115,68 @@
     "connected": "Connected",
     "disconnected": "Disconnected",
     "verified": "Verified",
-    "unverified": "Unverified"
+    "unverified": "Unverified",
+    "errorDescription": "We could not load the data. Please try again.",
+    "blocked": {
+      "notAuthenticated": {
+        "title": "Login Required",
+        "message": "Log in to access this content.",
+        "action": "Log In"
+      },
+      "featureDisabled": {
+        "title": "Feature Unavailable",
+        "message": "This feature is temporarily turned off."
+      },
+      "planRequired": {
+        "title": "Premium Content",
+        "message": "This content is available on specific plans.",
+        "action": "See Plans"
+      },
+      "roleInsufficient": {
+        "title": "Restricted Access",
+        "message": "You do not have permission to access this content."
+      },
+      "visibilityRestricted": {
+        "title": "Restricted Content",
+        "message": "This content is not available to you."
+      },
+      "default": {
+        "title": "No Content",
+        "message": "No content found."
+      }
+    },
+    "emptyStates": {
+      "workouts": {
+        "title": "No workouts found",
+        "description": "Start by creating your first custom workout, or wait for your trainer to assign one."
+      },
+      "diets": {
+        "title": "No diets found",
+        "description": "Build your first diet, or wait for your nutritionist to create one for you.",
+        "action": "Create Diet"
+      },
+      "challenges": {
+        "title": "No active challenges",
+        "description": "Challenges are a great way to stay motivated. Create one or join a community challenge.",
+        "action": "Create Challenge"
+      },
+      "health": {
+        "title": "No health data",
+        "description": "Start logging your health metrics to track your progress."
+      },
+      "checkins": {
+        "title": "No check-ins logged",
+        "description": "Do your first daily check-in to start tracking your progress!"
+      },
+      "community": {
+        "title": "Nobody on the leaderboard yet",
+        "description": "The community is still growing. Be one of the first to join!"
+      },
+      "search": {
+        "withQuery": "We found no results for \"{query}\". Try other search terms.",
+        "noQuery": "Refine your search to find what you are looking for."
+      }
+    }
   },
   "auth": {
     "login": "Login",
@@ -525,7 +586,22 @@
     "addNotes": "Add notes",
     "optional": "optional",
     "glasses": "glasses",
-    "liters": "liters"
+    "liters": "liters",
+    "congrats": "Congratulations!",
+    "noChallenge": "No challenge",
+    "notLogged": "Not logged",
+    "reviewFullDay": "Review my full day",
+    "status": {
+      "notStarted": "Not started",
+      "inProgress": "In progress",
+      "complete": "Complete"
+    },
+    "moods": {
+      "great": "Great",
+      "good": "Good",
+      "okay": "Okay",
+      "bad": "Bad"
+    }
   },
   "nutrition": {
     "title": "Nutrition",
@@ -558,6 +634,32 @@
       "protein": "Essential for muscle maintenance and growth.",
       "carbs": "Main source of energy for workouts.",
       "fat": "Important for hormones and vitamin absorption."
+    },
+    "mealTypes": {
+      "breakfast": "Breakfast",
+      "lunch": "Lunch",
+      "dinner": "Dinner",
+      "snack": "Snack",
+      "other": "General"
+    },
+    "logMeal": {
+      "title": "Log Consumption",
+      "srTitle": "Log Meal Consumption",
+      "srDescription": "Pick a meal from the list or use search to log it to your diary.",
+      "searchPlaceholder": "Search by name or ingredient...",
+      "noSuggestions": "No suggestions found.",
+      "itemCount": "{count} items",
+      "closeList": "Close List"
+    },
+    "consumption": {
+      "title": "Log Consumption",
+      "question": "How much did you eat of",
+      "smartPortion": "Suggested Smart Portion",
+      "standardPortion": "Standard Portion",
+      "less": "Less",
+      "more": "More",
+      "adjustHint": "Adjust if you ate more or less than suggested.",
+      "confirm": "Confirm Consumption"
     }
   },
   "challenges": {
@@ -1325,7 +1427,50 @@
     "flexibility": "Flexibility",
     "difficulty": "Difficulty",
     "equipment": "Equipment",
-    "noEquipment": "No equipment"
+    "noEquipment": "No equipment",
+    "untitled": "Untitled workout",
+    "subtitle": "Explore workouts and reach your goals",
+    "exercisesShort": "exerc.",
+    "setsShort": "sets",
+    "categories": {
+      "cardio": "Cardio",
+      "strength": "Strength Training",
+      "hiit": "HIIT",
+      "flexibility": "Flexibility",
+      "yoga": "Yoga",
+      "taichi": "Tai Chi",
+      "functional": "Functional",
+      "calisthenics": "Calisthenics",
+      "stretching": "Stretching"
+    },
+    "toast": {
+      "created": "Workout created!",
+      "updated": "Workout updated!",
+      "deleted": "Workout deleted!"
+    },
+    "deleteDialog": {
+      "title": "Delete workout?",
+      "description": "This cannot be undone. The workout will be removed permanently."
+    },
+    "empty": {
+      "systemTitle": "No workouts available",
+      "systemDescription": "Workouts will be added soon by the administrator.",
+      "userTitle": "Create your own workouts",
+      "creationDisabled": "Workout creation is currently disabled.",
+      "createFirst": "Create First Workout"
+    },
+    "backToWorkouts": "Back to workouts",
+    "generalMuscleGroup": "General",
+    "noDescription": "No description.",
+    "noInstructions": "No detailed instructions available.",
+    "noPause": "NO PAUSE",
+    "inSequence": "In sequence",
+    "otherWorkout": "Another workout",
+    "conflictDialog": {
+      "title": "Workout in progress",
+      "description": "You already have an active workout ({workout}). Starting a new one will cancel it. Continue?",
+      "confirm": "End previous and Start"
+    }
   },
   "diets": {
     "title": "Diet Plans",
@@ -1360,10 +1505,42 @@
     "dinner": "Dinner",
     "snack": "Snack",
     "preworkout": "Pre-workout",
-    "postworkout": "Post-workout"
+    "postworkout": "Post-workout",
+    "untitled": "Untitled diet",
+    "mealsUpdated": "Meals updated",
+    "mealsLogged": "{count} meal(s) logged",
+    "noMealsLogged": "No meals logged",
+    "whatDidYouEatToday": "What did you eat today?",
+    "logNewMeal": "Log new meal",
+    "logged": "Logged",
+    "dayTotal": "Day total",
+    "filterDishes": "Filter recommended dishes...",
+    "mealsUnit": "meals",
+    "empty": {
+      "userTitle": "Your Custom Dishes",
+      "createHint": "Create dishes that fit your routine and preferences.",
+      "creationDisabled": "Creating custom dishes is not available right now.",
+      "createFirst": "Create First Dish",
+      "noPlansTitle": "No meal plan",
+      "noPlansDescription": "You don't have a meal plan assigned yet. Talk to your trainer or nutritionist.",
+      "noSuggestionsTitle": "No suggestions available",
+      "noSuggestionsDescription": "Your nutritionist or gym hasn't added any dishes yet."
+    },
+    "deleteDialog": {
+      "title": "Delete dish?",
+      "description": "This action cannot be undone. The dish will be permanently removed.",
+      "confirm": "Confirm Deletion"
+    }
   },
   "exercises": {
     "explore": "Explore",
+    "history": {
+      "empty": "No history found.",
+      "emptyHint": "Complete this exercise to see your progress.",
+      "individualExecution": "Individual Execution",
+      "freeWorkout": "Free Workout",
+      "unknownDate": "Unknown date"
+    },
     "searchPlaceholder": "Search exercises...",
     "clear": "Clear",
     "clearAll": "Clear all",
@@ -1641,6 +1818,72 @@
       "passwordRequired": "Password is required",
       "passwordMin": "Password must be at least 6 characters",
       "selectPlan": "Please select a plan"
+    }
+  },
+  "summary": {
+    "monthly": "Monthly Summary",
+    "yearly": "Yearly Summary",
+    "weekOf": "Week of {start} - {end}",
+    "thisWeek": "This Week",
+    "thisMonth": "This Month",
+    "thisYear": "This Year",
+    "showLess": "Show less",
+    "hiddenItems": "+{count} hidden items",
+    "completedCount": "{count} completed",
+    "noneActive": "None active",
+    "errors": {
+      "saveChanges": "Could not save changes"
+    },
+    "workouts": {
+      "title": "Physical Activity",
+      "deleteConfirm": "Delete this entire workout entry? This cannot be undone."
+    },
+    "nutrition": {
+      "deleteTitle": "Delete meal?",
+      "deleteDescription": "This will remove \"{title}\" from your history permanently.",
+      "adjustPortions": "Adjust the portions...",
+      "noMeals": "No meals logged.",
+      "logFirst": "Log your first meal",
+      "mealCount": "{count} meals"
+    },
+    "motivation": {
+      "high": "Excellent day! Keep it up!",
+      "medium": "Good progress! Every step counts.",
+      "low": "Every start counts. Let's go!"
+    }
+  },
+  "execution": {
+    "loadErrorTitle": "Could not load workout",
+    "loadErrorMessage": "We could not load this workout session.",
+    "progress": "Progress",
+    "currentExercise": "Current exercise",
+    "next": "Next",
+    "nextExercise": "Next exercise",
+    "after": "After",
+    "finish": "Finish",
+    "end": "End",
+    "abandonTitle": "Abandon workout?",
+    "abandonDescription": "Your progress will be saved, but the workout will be marked as abandoned. You can pick up where you left off later.",
+    "keepTraining": "Keep training",
+    "abandon": "Abandon",
+    "incompleteTitle": "Workout incomplete",
+    "incompleteDescription": "You have not completed every exercise yet. Finish anyway?",
+    "finishAnyway": "Finish anyway",
+    "finishExercise": "Finish Exercise",
+    "workoutComplete": "Workout Complete!",
+    "setLogged": "Set logged!",
+    "setLogError": "Could not save the set",
+    "stopConfirm": "Stop the workout? Your saved progress will be kept.",
+    "letsGo": "Let's go!",
+    "doneToday": "Done Today",
+    "feedback": {
+      "dislike": "Disliked it",
+      "likedIt": "Did you like this exercise?",
+      "difficulty": "Exercise difficulty",
+      "overallRating": "Overall rating",
+      "addComment": "Add a comment",
+      "exercisePlaceholder": "Any notes about this exercise?",
+      "workoutPlaceholder": "Any notes about this workout? (optional)"
     }
   }
 }

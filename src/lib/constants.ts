@@ -1,13 +1,23 @@
 // Water goal in milliliters
 export const WATER_GOAL_ML = 2000;
 
-// Meal type labels
-export const MEAL_TYPE_LABELS: Record<string, string> = {
-  breakfast: "Café da Manhã",
-  lunch: "Almoço",
-  dinner: "Jantar",
-  snack: "Lanche",
+/** Signature of the `t` returned by useI18n / useI18nSafe. */
+type TranslateFn = (key: string, paramsOrOptions?: Record<string, unknown>) => string;
+
+// Meal types: translation keys, resolved through `mealTypeLabel`
+export const MEAL_TYPE_KEYS: Record<string, string> = {
+  breakfast: "nutrition.mealTypes.breakfast",
+  lunch: "nutrition.mealTypes.lunch",
+  dinner: "nutrition.mealTypes.dinner",
+  snack: "nutrition.mealTypes.snack",
 };
+
+/** Label for a meal category, falling back to the raw value for unknown ones. */
+export function mealTypeLabel(t: TranslateFn, category?: string | null): string {
+  if (!category) return t("nutrition.mealTypes.other");
+  const key = MEAL_TYPE_KEYS[category];
+  return key ? t(key) : category;
+}
 
 // Task type icons mapping
 export const TASK_TYPE_ICONS: Record<string, string> = {
@@ -17,17 +27,33 @@ export const TASK_TYPE_ICONS: Record<string, string> = {
   habit: "✅",
 };
 
-// Workout category labels
-export const WORKOUT_CATEGORY_LABELS: Record<string, string> = {
-  cardio: "Cardio",
-  strength: "Musculação",
-  hiit: "HIIT",
-  flexibility: "Flexibilidade",
-  yoga: "Yoga",
-  functional: "Funcional",
-  calisthenics: "Calistenia",
-  stretching: "Alongamento",
+// Workout categories: translation keys, resolved through `workoutCategoryLabel`
+export const WORKOUT_CATEGORY_KEYS: Record<string, string> = {
+  cardio: "workouts.categories.cardio",
+  strength: "workouts.categories.strength",
+  hiit: "workouts.categories.hiit",
+  flexibility: "workouts.categories.flexibility",
+  yoga: "workouts.categories.yoga",
+  taichi: "workouts.categories.taichi",
+  functional: "workouts.categories.functional",
+  calisthenics: "workouts.categories.calisthenics",
+  stretching: "workouts.categories.stretching",
 };
+
+/** Label for a workout category, falling back to the raw value for unknown ones. */
+export function workoutCategoryLabel(t: TranslateFn, category?: string | null): string {
+  if (!category) return "";
+  const key = WORKOUT_CATEGORY_KEYS[category];
+  return key ? t(key) : category;
+}
+
+/** Category options for selects and filter rows, in display order. */
+export function workoutCategoryOptions(t: TranslateFn): { value: string; label: string }[] {
+  return Object.keys(WORKOUT_CATEGORY_KEYS).map((value) => ({
+    value,
+    label: workoutCategoryLabel(t, value),
+  }));
+}
 
 // Diet category colors
 export const DIET_CATEGORY_COLORS: Record<string, string> = {
@@ -44,6 +70,7 @@ export const WORKOUT_CATEGORY_COLORS: Record<string, string> = {
   hiit: "bg-pink-500/10 text-pink-600 border-pink-500/20",
   flexibility: "bg-teal-500/10 text-teal-600 border-teal-500/20",
   yoga: "bg-indigo-500/10 text-indigo-600 border-indigo-500/20",
+  taichi: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
   functional: "bg-purple-500/10 text-purple-600 border-purple-500/20",
   calisthenics: "bg-cyan-500/10 text-cyan-600 border-cyan-500/20",
   stretching: "bg-green-500/10 text-green-600 border-green-500/20",

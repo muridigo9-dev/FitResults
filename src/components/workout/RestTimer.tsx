@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Play, Pause, RotateCcw, Volume2, VolumeX, Plus, Minus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/hooks/useI18n";
 
 interface RestTimerProps {
   initialSeconds: number;
@@ -32,6 +33,7 @@ export function RestTimer({
   size = "md",
   className,
 }: RestTimerProps) {
+    const { t } = useI18n();
   const [timeRemaining, setTimeRemaining] = useState(initialSeconds);
   const [isRunning, setIsRunning] = useState(autoStart);
   const [isMuted, setIsMuted] = useState(false);
@@ -245,7 +247,7 @@ export function RestTimer({
           className="mt-2 w-full animate-in zoom-in"
           onClick={onComplete}
         >
-          Vamos lá!
+          {t("execution.letsGo")}
         </Button>
       )}
 
@@ -472,6 +474,7 @@ export function RestTimerModal({
   onAdjustTime,
   onReset,
 }: RestTimerModalProps) {
+    const { t } = useI18n();
   if (!isOpen) return null;
 
   return (
@@ -492,7 +495,7 @@ export function RestTimerModal({
           </h3>
           {exerciseName && (
             <p className="text-sm text-muted-foreground/70">
-              Após: {exerciseName}
+              {t("execution.after")}: {exerciseName}
             </p>
           )}
         </div>
@@ -515,7 +518,7 @@ export function RestTimerModal({
         {nextExerciseName && (
           <div className="text-center">
             <p className="text-xs text-muted-foreground uppercase tracking-wide">
-              Próximo exercício
+              {t("execution.nextExercise")}
             </p>
             <p className="text-lg font-semibold">{nextExerciseName}</p>
           </div>

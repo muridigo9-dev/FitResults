@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useI18nSafe } from "@/hooks/useI18nSafe";
+import { localizedField } from "@/lib/contentI18n";
 import type {
   WorkoutSession,
   SessionExercise,
@@ -22,6 +24,7 @@ export function useWorkoutSession(sessionId?: string) {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { language } = useI18nSafe();
 
   // Timer state
   const [restTimeRemaining, setRestTimeRemaining] = useState(0);
@@ -32,7 +35,7 @@ export function useWorkoutSession(sessionId?: string) {
 
   // Fetch session data
   const { data: session, isLoading, error, refetch } = useQuery({
-    queryKey: ["workout-session", sessionId],
+    queryKey: ["workout-session", sessionId, language],
     queryFn: async () => {
       if (!sessionId) return null;
 
@@ -58,7 +61,13 @@ export function useWorkoutSession(sessionId?: string) {
         id: data.id,
         userId: data.user_id,
         workoutId: data.workout_id,
-        workout: data.workout,
+        workout: data.workout
+          ? {
+            ...data.workout,
+            title: localizedField(data.workout, "title", language),
+            description: localizedField(data.workout, "description", language),
+          }
+          : data.workout,
         seriesId: data.series_id,
         academyId: data.academy_id,
         trainerId: data.trainer_id,
@@ -87,7 +96,14 @@ export function useWorkoutSession(sessionId?: string) {
             id: ex.id,
             sessionId: ex.session_id,
             exerciseId: ex.exercise_id,
-            exercise: ex.exercise,
+            exercise: ex.exercise
+              ? {
+                ...ex.exercise,
+                name: localizedField(ex.exercise, "name", language),
+                description: localizedField(ex.exercise, "description", language),
+                instructions: localizedField(ex.exercise, "instructions", language),
+              }
+              : ex.exercise,
             seriesExerciseId: ex.series_exercise_id,
             supersetId: ex.superset_id,
             displayOrder: ex.display_order,

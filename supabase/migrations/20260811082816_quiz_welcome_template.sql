@@ -1,7 +1,7 @@
 -- The credentials email a quiz buyer receives, in the three languages the funnel
 -- sells in.
 --
--- Separate from 20260810200000 because that migration runs
+-- Separate from 20260811082740 because that migration runs
 -- `alter type ... add value 'quiz_welcome_credentials'`, and Postgres refuses to
 -- *use* a new enum value in the same transaction that added it.
 --

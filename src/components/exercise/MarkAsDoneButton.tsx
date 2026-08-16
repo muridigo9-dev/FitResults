@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Check, Dumbbell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/hooks/useI18n";
 
 interface MarkAsDoneButtonProps {
     isDone: boolean;
@@ -11,6 +12,7 @@ interface MarkAsDoneButtonProps {
 }
 
 export function MarkAsDoneButton({ isDone, onConfirm, className, skipConfirmation }: MarkAsDoneButtonProps) {
+    const { t } = useI18n();
     const [stage, setStage] = useState<"idle" | "confirming" | "done">("idle");
 
     // Reset stage if isDone changes externally (e.g. from database load)
@@ -59,7 +61,7 @@ export function MarkAsDoneButton({ isDone, onConfirm, className, skipConfirmatio
                 disabled
             >
                 <Check className="w-4 h-4 mr-2" />
-                Concluído Hoje
+                {t("execution.doneToday")}
             </Button>
         );
     }

@@ -15,7 +15,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { useDiets } from "@/hooks/useDiets";
 import { useDietPlans } from "@/hooks/useDietPlans";
 import { AnimatedLoader } from "@/components/loaders";
-import { MEAL_TYPE_LABELS } from "@/lib/constants";
+import { mealTypeLabel } from "@/lib/constants";
 import { EmptyStateReason } from "@/components/states/EmptyStateReason";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -151,7 +151,7 @@ export default function Diets() {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
                 <Badge variant="secondary" className="absolute top-3 left-3 bg-white/20 backdrop-blur-md text-white border-0">
-                  {MEAL_TYPE_LABELS[diet.category] || diet.category}
+                  {mealTypeLabel(t, diet.category)}
                 </Badge>
 
                 {isLogged && (

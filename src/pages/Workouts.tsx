@@ -20,7 +20,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { useWorkouts } from "@/hooks/useWorkouts";
 import { useWorkoutStreak, useActiveSession } from "@/hooks/useWorkoutSession";
 import { AnimatedLoader } from "@/components/loaders";
-import { WORKOUT_CATEGORY_LABELS } from "@/lib/constants";
+import { workoutCategoryLabel, workoutCategoryOptions } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { differenceInDays } from "date-fns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -125,7 +125,7 @@ export default function Workouts() {
   const handleDeleteWorkout = () => {
     if (deletingId) {
       deleteUserWorkout(deletingId);
-      toast.success("Treino excluído!");
+      toast.success(t("workouts.toast.deleted"));
       setDeletingId(null);
     }
   };
@@ -140,7 +140,7 @@ export default function Workouts() {
     const matchesCategory = selectedCategory
       ? (
         w.category?.toLowerCase() === selectedCategory.toLowerCase() ||
-        w.category?.toLowerCase() === WORKOUT_CATEGORY_LABELS[selectedCategory as keyof typeof WORKOUT_CATEGORY_LABELS]?.toLowerCase()
+        w.category?.toLowerCase() === workoutCategoryLabel(t, selectedCategory).toLowerCase()
       )
       : true;
 
@@ -280,7 +280,7 @@ export default function Workouts() {
             >
               {t("workouts.filters.all")}
             </button>
-            {Object.entries(WORKOUT_CATEGORY_LABELS).map(([key, label]) => (
+            {workoutCategoryOptions(t).map(({ value: key, label }) => (
               <button
                 key={key}
                 onClick={() => setSelectedCategory(key === selectedCategory ? null : key)}
@@ -362,7 +362,7 @@ export default function Workouts() {
                             <div>
                               <div className="flex items-center gap-2 mb-1.5">
                                 <Badge variant="secondary" className="px-1.5 py-0 h-5 text-[10px] font-bold uppercase tracking-wider bg-secondary/50 text-secondary-foreground border-0">
-                                  {WORKOUT_CATEGORY_LABELS[workout.category as keyof typeof WORKOUT_CATEGORY_LABELS] || workout.category}
+                                  {workoutCategoryLabel(t, workout.category)}
                                 </Badge>
                                 {workout.completedCount > 0 && (
                                   <span className="text-[10px] text-muted-foreground flex items-center gap-0.5 whitespace-nowrap">
@@ -451,7 +451,7 @@ export default function Workouts() {
                           <div>
                             <div className="flex items-center gap-2 mb-1.5">
                               <Badge variant="secondary" className="px-1.5 py-0 h-5 text-[10px] font-bold uppercase tracking-wider bg-secondary/50 text-secondary-foreground border-0">
-                                {WORKOUT_CATEGORY_LABELS[workout.category as keyof typeof WORKOUT_CATEGORY_LABELS] || workout.category}
+                                {workoutCategoryLabel(t, workout.category)}
                               </Badge>
                             </div>
                             <h3 className="font-bold text-base md:text-lg leading-tight text-foreground line-clamp-2">
@@ -538,7 +538,7 @@ export default function Workouts() {
                           <div>
                             <div className="flex items-center gap-2 mb-1.5">
                               <Badge variant="secondary" className="px-1.5 py-0 h-5 text-[10px] font-bold uppercase tracking-wider bg-secondary/50 text-secondary-foreground border-0">
-                                {WORKOUT_CATEGORY_LABELS[workout.category as keyof typeof WORKOUT_CATEGORY_LABELS] || workout.category}
+                                {workoutCategoryLabel(t, workout.category)}
                               </Badge>
                               {workout.completedCount > 0 && (
                                 <span className="text-[10px] text-muted-foreground flex items-center gap-0.5 whitespace-nowrap">

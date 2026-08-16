@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Diet } from "@/types/content";
 import { MealEntry } from "@/types/checkin";
-import { MEAL_TYPE_LABELS } from "@/lib/constants";
+import { mealTypeLabel } from "@/lib/constants";
+import { useI18n } from "@/hooks/useI18n";
 import { ConsumptionModal } from "./ConsumptionModal";
 
 interface StepMealsProps {
@@ -18,6 +19,7 @@ interface StepMealsProps {
 }
 
 export function StepMeals({ diets, selectedMeals, onToggle, className }: StepMealsProps) {
+  const { t } = useI18n();
   const [modalDish, setModalDish] = useState<Diet | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -73,20 +75,20 @@ export function StepMeals({ diets, selectedMeals, onToggle, className }: StepMea
         <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-primary/10 mb-2">
           <Utensils className="h-6 w-6 text-primary" />
         </div>
-        <h2 className="text-lg font-black text-foreground uppercase tracking-tight">Alimentação</h2>
+        <h2 className="text-lg font-black text-foreground uppercase tracking-tight">{t("checkin.nutrition")}</h2>
         <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest">
-          O que você comeu hoje?
+          {t("diets.whatDidYouEatToday")}
         </p>
       </div>
 
       {/* Quick Action Button */}
       <Button
         onClick={() => setIsDrawerOpen(true)}
-        className="w-full h-14 rounded-2xl gap-3 font-black text-base shadow-lg shadow-primary/10 border-2 border-primary/20 hover:scale-[1.02] transition-all"
+        className="w-full h-14 rounded-2xl gap-3 font-black text-base uppercase shadow-lg shadow-primary/10 border-2 border-primary/20 hover:scale-[1.02] transition-all"
         variant="outline"
       >
         <Plus className="h-5 w-5" />
-        REGISTRAR NOVA REFEIÇÃO
+        {t("diets.logNewMeal")}
       </Button>
 
       {/* Summary card */}
@@ -94,13 +96,13 @@ export function StepMeals({ diets, selectedMeals, onToggle, className }: StepMea
         <Card className="bg-primary/5 border-primary/10 overflow-hidden">
           <CardContent className="p-4 flex items-center justify-between">
             <div className="space-y-0.5">
-              <p className="text-[10px] text-primary font-black uppercase tracking-widest">Registradas</p>
+              <p className="text-[10px] text-primary font-black uppercase tracking-widest">{t("diets.logged")}</p>
               <p className="text-2xl font-black text-foreground leading-none">
-                {completedCount} <span className="text-sm font-medium text-muted-foreground italic">refeições</span>
+                {completedCount} <span className="text-sm font-medium text-muted-foreground italic">{t("diets.mealsUnit")}</span>
               </p>
             </div>
             <div className="text-right space-y-0.5">
-              <p className="text-[10px] text-primary font-black uppercase tracking-widest">Total do Dia</p>
+              <p className="text-[10px] text-primary font-black uppercase tracking-widest">{t("diets.dayTotal")}</p>
               <p className="text-2xl font-black text-primary leading-none">{totalCalories} <span className="text-sm font-medium italic">kcal</span></p>
             </div>
           </CardContent>
@@ -111,7 +113,7 @@ export function StepMeals({ diets, selectedMeals, onToggle, className }: StepMea
       <div className="relative group">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
         <Input
-          placeholder="Filtrar pratos recomendados..."
+          placeholder={t("diets.filterDishes")}
           className="pl-9 h-11 bg-muted/30 border-border/50 rounded-xl"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
@@ -151,7 +153,7 @@ export function StepMeals({ diets, selectedMeals, onToggle, className }: StepMea
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-primary/10 text-primary uppercase tracking-tighter">
-                        {MEAL_TYPE_LABELS[diet.category] || diet.category}
+                        {mealTypeLabel(t, diet.category)}
                       </span>
                       {isAdjusted && (
                         <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-success/10 text-success uppercase tracking-tighter">

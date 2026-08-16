@@ -27,6 +27,7 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { useI18n } from "@/hooks/useI18n";
 
 interface NutritionCardProps {
     data: {
@@ -40,6 +41,7 @@ interface NutritionCardProps {
 }
 
 function MealDetailDrawer({ entry, onClose }: { entry: any; onClose?: () => void }) {
+    const { t } = useI18n();
     const [isEditing, setIsEditing] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [editedIngredients, setEditedIngredients] = useState(entry.ingredients || []);
@@ -126,9 +128,9 @@ function MealDetailDrawer({ entry, onClose }: { entry: any; onClose?: () => void
                             </AlertDialogTrigger>
                             <AlertDialogContent className="w-[90vw] max-w-sm rounded-2xl border-destructive/20" aria-describedby="delete-confirmation-description">
                                 <AlertDialogHeader>
-                                    <AlertDialogTitle className="text-center">Excluir Refeição?</AlertDialogTitle>
+                                    <AlertDialogTitle className="text-center">{t("summary.nutrition.deleteTitle")}</AlertDialogTitle>
                                     <AlertDialogDescription id="delete-confirmation-description" className="text-center">
-                                        Isso removerá "{entry.title}" permanentemente do seu histórico.
+                                        {t("summary.nutrition.deleteDescription", { title: entry.title })}
                                     </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter className="flex-col gap-2 mt-4 sm:flex-col">
@@ -173,7 +175,7 @@ function MealDetailDrawer({ entry, onClose }: { entry: any; onClose?: () => void
                 <div className="space-y-3">
                     <div className="flex items-center justify-between">
                         <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Ingredientes</p>
-                        {isEditing && <span className="text-[10px] text-primary font-bold animate-pulse">Ajuste as Porções...</span>}
+                        {isEditing && <span className="text-[10px] text-primary font-bold animate-pulse">{t("summary.nutrition.adjustPortions")}</span>}
                     </div>
                     <div className="space-y-2">
                         {editedIngredients.map((ingredient: any, idx: number) => (
@@ -224,6 +226,7 @@ function MealDetailDrawer({ entry, onClose }: { entry: any; onClose?: () => void
 }
 
 export function NutritionCard({ data }: NutritionCardProps) {
+    const { t } = useI18n();
     const navigate = useNavigate();
     const [isExpanded, setIsExpanded] = useState(false);
     const [openDrawerId, setOpenDrawerId] = useState<string | null>(null);
@@ -234,14 +237,14 @@ export function NutritionCard({ data }: NutritionCardProps) {
             <Card className="border-dashed border-2">
                 <CardContent className="p-8 flex flex-col items-center justify-center text-center">
                     <Utensils className="h-10 w-10 text-muted-foreground mb-3 opacity-20" />
-                    <p className="text-sm text-muted-foreground font-medium">Nenhuma refeição registrada.</p>
+                    <p className="text-sm text-muted-foreground font-medium">{t("summary.nutrition.noMeals")}</p>
                     <Button
                         variant="link"
                         size="sm"
                         className="text-primary mt-2"
                         onClick={() => navigate("/nutrition")}
                     >
-                        Registrar primeira refeição
+                        {t("summary.nutrition.logFirst")}
                     </Button>
                 </CardContent>
             </Card>
@@ -259,10 +262,10 @@ export function NutritionCard({ data }: NutritionCardProps) {
                 <div className="flex items-center justify-between">
                     <CardTitle className="text-sm font-black flex items-center gap-2">
                         <Utensils className="h-4 w-4 text-orange-500" />
-                        Alimentação
+                        {t("checkin.meals")}
                     </CardTitle>
                     <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-600 uppercase">
-                        {data.mealsLogged} Refeições
+                        {t("summary.nutrition.mealCount", { count: data.mealsLogged })}
                     </span>
                 </div>
             </CardHeader>
@@ -288,7 +291,7 @@ export function NutritionCard({ data }: NutritionCardProps) {
                 <div className="grid grid-cols-3 gap-2">
                     <div className="bg-muted/40 p-2.5 rounded-xl border border-border/50 text-center">
                         <span className="block text-xs font-black text-foreground">{Math.round(data.proteinConsumed)}g</span>
-                        <span className="text-[9px] text-muted-foreground uppercase font-black">Proteína</span>
+                        <span className="text-[9px] text-muted-foreground uppercase font-black">{t("nutrition.protein")}</span>
                     </div>
                     <div className="bg-muted/40 p-2.5 rounded-xl border border-border/50 text-center">
                         <span className="block text-xs font-black text-foreground">{Math.round(data.carbsConsumed)}g</span>
@@ -334,7 +337,7 @@ export function NutritionCard({ data }: NutritionCardProps) {
                             className="w-full text-[10px] font-black uppercase text-muted-foreground mt-2 h-9 rounded-xl hover:bg-muted/50 active:scale-95 transition-all"
                             onClick={() => setIsExpanded(!isExpanded)}
                         >
-                            {isExpanded ? "Mostrar menos" : `+${data.entries.length - 3} itens ocultos`}
+                            {isExpanded ? t("summary.showLess") : t("summary.hiddenItems", { count: data.entries.length - 3 })}
                         </Button>
                     )}
                 </div>

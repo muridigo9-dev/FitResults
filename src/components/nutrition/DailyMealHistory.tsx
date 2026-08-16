@@ -1,13 +1,14 @@
 import { useDiary } from "@/contexts/DiaryContext";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { Trash2, Clock, Flame } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useDateLocale } from "@/lib/dateLocale";
 
 export function DailyMealHistory() {
+    const dateLocale = useDateLocale();
     const { todayEntries, removeMealLog } = useDiary();
 
     const meals = todayEntries
@@ -30,7 +31,7 @@ export function DailyMealHistory() {
                 <ScrollArea className="h-full rounded-md">
                     <div className="space-y-3">
                         {meals.map((entry) => {
-                            const time = format(new Date(entry.createdAt), "HH:mm", { locale: ptBR });
+                            const time = format(new Date(entry.createdAt), "HH:mm", { locale: dateLocale });
 
                             // Specific type guard processing
                             const mealEntry = entry as any;

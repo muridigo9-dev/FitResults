@@ -12,10 +12,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { Diet } from "@/types/content";
-import { MEAL_TYPE_LABELS } from "@/lib/constants";
+import { mealTypeLabel } from "@/lib/constants";
 import { Search, Utensils, Plus, ChefHat, Flame, Info } from "lucide-react";
 import { useState, useMemo } from "react";
 import { LogMealDialog } from "@/components/nutrition/LogMealDialog";
+import { useI18n } from "@/hooks/useI18n";
 
 interface QuickDietDrawerProps {
     open: boolean;
@@ -26,6 +27,7 @@ interface QuickDietDrawerProps {
 }
 
 export function QuickDietDrawer({ open, onOpenChange, diets }: QuickDietDrawerProps) {
+    const { t } = useI18n();
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedDietForLog, setSelectedDietForLog] = useState<Diet | null>(null);
 
@@ -48,8 +50,8 @@ export function QuickDietDrawer({ open, onOpenChange, diets }: QuickDietDrawerPr
             <Drawer open={open} onOpenChange={onOpenChange}>
                 <DrawerContent className="bg-background outline-none ring-0 border-none rounded-t-[32px]">
                     <div className="sr-only">
-                        <DrawerTitle>Registrar Consumo de Refeição</DrawerTitle>
-                        <DrawerDescription>Selecione uma refeição da lista ou use a busca para registrar seu consumo no diário.</DrawerDescription>
+                        <DrawerTitle>{t("nutrition.logMeal.srTitle")}</DrawerTitle>
+                        <DrawerDescription>{t("nutrition.logMeal.srDescription")}</DrawerDescription>
                     </div>
                     <div className="mx-auto w-full max-w-md h-[85vh] flex flex-col">
                         <DrawerHeader className="mb-2 pb-2">
@@ -57,14 +59,14 @@ export function QuickDietDrawer({ open, onOpenChange, diets }: QuickDietDrawerPr
                                 <div className="p-2.5 bg-primary/10 rounded-2xl text-primary shadow-inner">
                                     <Utensils className="h-5 w-5" />
                                 </div>
-                                Registrar Consumo
+                                {t("nutrition.logMeal.title")}
                             </div>
 
                             {/* Search Bar - More Modern */}
                             <div className="relative group">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
                                 <Input
-                                    placeholder="Buscar por nome ou ingrediente..."
+                                    placeholder={t("nutrition.logMeal.searchPlaceholder")}
                                     className="h-12 pl-10 bg-muted/30 border-none rounded-xl focus:bg-muted/50 transition-all font-medium"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -76,7 +78,7 @@ export function QuickDietDrawer({ open, onOpenChange, diets }: QuickDietDrawerPr
                             {filteredDiets.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center py-16 text-muted-foreground opacity-50">
                                     <ChefHat className="h-16 w-16 mb-4 stroke-[1.5]" />
-                                    <p className="font-bold">Nenhuma sugestão encontrada.</p>
+                                    <p className="font-bold">{t("nutrition.logMeal.noSuggestions")}</p>
                                 </div>
                             ) : (
                                 filteredDiets.map((diet) => (
@@ -109,7 +111,7 @@ export function QuickDietDrawer({ open, onOpenChange, diets }: QuickDietDrawerPr
                                                     <div className="min-w-0">
                                                         <div className="flex items-center gap-2 mb-1">
                                                             <span className="text-[10px] font-black uppercase tracking-widest text-primary/80 bg-primary/10 px-2 py-0.5 rounded-md">
-                                                                {MEAL_TYPE_LABELS[diet.category] || diet.category || "Geral"}
+                                                                {mealTypeLabel(t, diet.category)}
                                                             </span>
                                                         </div>
                                                         <h4 className="font-black text-sm leading-tight text-foreground truncate max-w-[190px]">
@@ -129,7 +131,7 @@ export function QuickDietDrawer({ open, onOpenChange, diets }: QuickDietDrawerPr
                                                     <div className="flex items-center gap-1.5 opacity-80">
                                                         <div className="w-1 h-1 rounded-full bg-border" />
                                                         <span className="truncate">
-                                                            {diet.ingredients?.length || 0} ITENS
+                                                            {t("nutrition.logMeal.itemCount", { count: diet.ingredients?.length || 0 })}
                                                         </span>
                                                     </div>
                                                 </div>
@@ -143,7 +145,7 @@ export function QuickDietDrawer({ open, onOpenChange, diets }: QuickDietDrawerPr
                         <DrawerFooter className="pt-4 border-t border-border/40 bg-background/95 backdrop-blur-xl pb-10 px-4">
                             <DrawerClose asChild>
                                 <Button variant="outline" className="w-full h-12 rounded-2xl font-black uppercase tracking-widest text-xs border-2 hover:bg-muted/50 transition-all">
-                                    Fechar Lista
+                                    {t("nutrition.logMeal.closeList")}
                                 </Button>
                             </DrawerClose>
                         </DrawerFooter>

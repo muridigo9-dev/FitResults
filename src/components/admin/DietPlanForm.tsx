@@ -30,6 +30,7 @@ import { VisibilitySelector } from "./VisibilitySelector";
 import type { VisibilityType } from "@/hooks/useUnifiedVisibility";
 import { useAdminContent } from "@/hooks/useAdminContent";
 import { ImageUploader } from "./ImageUploader";
+import { TranslationFields } from "./TranslationFields";
 import { toast } from "sonner";
 
 interface DietPlanFormProps {
@@ -54,6 +55,12 @@ export function DietPlanForm({ plan, onSave, onCancel }: DietPlanFormProps) {
     const { diets: dishes } = useAdminContent();
 
     const [title, setTitle] = useState(plan?.title || "");
+    const [translations, setTranslations] = useState<Record<string, string>>({
+        titleEn: (plan as any)?.titleEn || "",
+        titleEs: (plan as any)?.titleEs || "",
+        descriptionEn: (plan as any)?.descriptionEn || "",
+        descriptionEs: (plan as any)?.descriptionEs || "",
+    });
     const [description, setDescription] = useState(plan?.description || "");
     const [objective, setObjective] = useState(plan?.objective || "");
     const [isActive, setIsActive] = useState(plan?.isActive ?? true);
@@ -161,6 +168,7 @@ export function DietPlanForm({ plan, onSave, onCancel }: DietPlanFormProps) {
         onSave({
             title,
             description,
+            ...translations,
             objective,
             isActive,
             sessions: sessions.map((m, idx) => ({ ...m, orderIndex: idx })),
@@ -241,6 +249,15 @@ export function DietPlanForm({ plan, onSave, onCancel }: DietPlanFormProps) {
                             className="min-h-[100px] bg-background/50 border-primary/20"
                         />
                     </div>
+
+                    <TranslationFields
+                        fields={[
+                            { key: "title", label: "Nome do Plano", placeholderEn: "Ex: Fat Loss Plan", placeholderEs: "Ej: Plan de Pérdida de Grasa" },
+                            { key: "description", label: "Descrição", multiline: true, placeholderEn: "Details about this nutrition protocol...", placeholderEs: "Detalles sobre este protocolo nutricional..." },
+                        ]}
+                        values={translations}
+                        onChange={(key, value) => setTranslations((prev) => ({ ...prev, [key]: value }))}
+                    />
 
                     <div className="space-y-2">
                         <Label className="text-sm font-semibold">Banner do Plano</Label>

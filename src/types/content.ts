@@ -126,6 +126,15 @@ export interface Exercise {
   slug?: string;
   name: string;
   description: string;
+
+  // Translations (base fields above are pt-BR; empty translations fall back to them)
+  nameEn?: string;
+  nameEs?: string;
+  descriptionEn?: string;
+  descriptionEs?: string;
+  instructionsEn?: string;
+  instructionsEs?: string;
+
   sets: number;
   reps: number | string;
   restSeconds: number;
@@ -190,6 +199,13 @@ export interface Workout {
   id: string;
   title: string;
   description: string;
+
+  // Translations (base fields above are pt-BR; empty translations fall back to them)
+  titleEn?: string;
+  titleEs?: string;
+  descriptionEn?: string;
+  descriptionEs?: string;
+
   imageUrl: string;
   imagePath?: string;
   category: string;

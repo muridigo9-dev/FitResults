@@ -33,6 +33,7 @@ import type { VisibilityType } from "@/hooks/useUnifiedVisibility";
 import { useAdminIngredients } from "@/hooks/useAdminIngredients";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { TranslationFields } from "./TranslationFields";
 
 interface DishFormProps {
   // Use 'dish' prop name for clarity, but support 'diet' for backward compatibility if needed, 
@@ -61,6 +62,12 @@ export function DishForm({ diet, onSave, onCancel }: DishFormProps) {
 
   // State
   const [title, setTitle] = useState(diet?.title || "");
+  const [translations, setTranslations] = useState<Record<string, string>>({
+    titleEn: (diet as any)?.titleEn || "",
+    titleEs: (diet as any)?.titleEs || "",
+    descriptionEn: (diet as any)?.descriptionEn || "",
+    descriptionEs: (diet as any)?.descriptionEs || "",
+  });
   const [description, setDescription] = useState(diet?.description || "");
   const [imageUrl, setImageUrl] = useState(diet?.imageUrl || "");
   const [imagePath, setImagePath] = useState(diet?.imagePath || "");
@@ -199,6 +206,7 @@ export function DishForm({ diet, onSave, onCancel }: DishFormProps) {
     onSave({
       title,
       description,
+      ...translations,
       imageUrl,
       imagePath: imagePath || undefined,
       category,
@@ -257,6 +265,14 @@ export function DishForm({ diet, onSave, onCancel }: DishFormProps) {
               rows={3}
             />
           </div>
+          <TranslationFields
+            fields={[
+              { key: "title", label: "Nome do Prato", placeholderEn: "Ex: Grilled Chicken with Rice", placeholderEs: "Ej: Pollo a la Plancha con Arroz" },
+              { key: "description", label: "Descrição", multiline: true, placeholderEn: "Describe the dish...", placeholderEs: "Describe el plato..." },
+            ]}
+            values={translations}
+            onChange={(key, value) => setTranslations((prev) => ({ ...prev, [key]: value }))}
+          />
           <div className="space-y-2">
             <Label>Imagem</Label>
             <ImageUploader

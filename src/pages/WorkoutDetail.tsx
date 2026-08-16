@@ -10,7 +10,6 @@ import { useWorkouts } from "@/hooks/useWorkouts";
 import { useActiveWorkout } from "@/contexts/ActiveWorkoutContext";
 import { AnimatedLoader, EmptyState } from "@/components/loaders";
 import { EmptyStateReason } from "@/components/states/EmptyStateReason";
-import { WORKOUT_CATEGORY_LABELS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { Carousel, CarouselContent, CarouselItem, CarouselApi } from "@/components/ui/carousel";
@@ -201,7 +200,7 @@ export default function WorkoutDetail() {
           title={t("workouts.workoutNotFound")}
           description={t("workouts.workoutRemovedMessage")}
           action={{
-            label: "Voltar para treinos",
+            label: t("workouts.backToWorkouts"),
             onClick: () => navigate("/workouts")
           }}
         />
@@ -305,7 +304,7 @@ export default function WorkoutDetail() {
                       />
                       {/* Overlay Info */}
                       <div className="absolute bottom-3 right-3 bg-black/60 backdrop-blur-md text-white text-xs px-3 py-1.5 rounded-full font-medium">
-                        {exercise.primaryMuscleGroup?.name || "Geral"}
+                        {exercise.primaryMuscleGroup?.name || t("workouts.generalMuscleGroup")}
                       </div>
                     </div>
 
@@ -313,7 +312,7 @@ export default function WorkoutDetail() {
                     <div className="mb-6">
                       <h2 className="text-2xl font-bold leading-tight mb-2">{exercise.name}</h2>
                       <p className="text-muted-foreground text-sm line-clamp-3">
-                        {exercise.description || "Sem descrição."}
+                        {exercise.description || t("workouts.noDescription")}
                       </p>
 
                       <Dialog>
@@ -347,7 +346,7 @@ export default function WorkoutDetail() {
                               )}
                             </div>
                             <div className="text-sm space-y-2">
-                              <p>{exercise.description || "Nenhuma instrução detalhada disponível."}</p>
+                              <p>{exercise.description || t("workouts.noInstructions")}</p>
                               {exercise.instructions && (
                                 <div className="p-4 bg-muted rounded-lg text-muted-foreground whitespace-pre-wrap">
                                   {exercise.instructions}
@@ -397,7 +396,7 @@ export default function WorkoutDetail() {
                                 )}
                               </div>
                               <div className="text-[10px] uppercase text-muted-foreground font-bold tracking-wider">
-                                {exercise.executionType === 'time' ? "Duração" : "Reps"}
+                                {exercise.executionType === 'time' ? t("workouts.duration") : t("workouts.reps")}
                               </div>
                             </CardContent>
                           </Card>
@@ -407,10 +406,10 @@ export default function WorkoutDetail() {
                                 {hasNextInSuperset ? <Flame className="w-5 h-5" /> : <Timer className="w-5 h-5" />}
                               </div>
                               <div className={cn("text-xl font-bold", hasNextInSuperset && "text-orange-500 text-lg")}>
-                                {hasNextInSuperset ? "SEM PAUSA" : `${exercise.restSeconds}s`}
+                                {hasNextInSuperset ? t("workouts.noPause") : `${exercise.restSeconds}s`}
                               </div>
                               <div className={cn("text-[10px] uppercase text-muted-foreground font-bold tracking-wider", hasNextInSuperset && "text-orange-500/70")}>
-                                {hasNextInSuperset ? "Em sequência" : "Descanso"}
+                                {hasNextInSuperset ? t("workouts.inSequence") : t("workouts.rest")}
                               </div>
                             </CardContent>
                           </Card>
@@ -431,7 +430,7 @@ export default function WorkoutDetail() {
         <div className="flex items-center justify-between gap-4 max-w-xl mx-auto w-full">
           <div className="hidden md:block">
             <p className="text-sm font-medium">{workout.title}</p>
-            <p className="text-xs text-muted-foreground">{duration} min • {workout.exercises.length} exercícios</p>
+            <p className="text-xs text-muted-foreground">{duration} {t("units.minutes")} • {workout.exercises.length} {t("workouts.exercises").toLowerCase()}</p>
           </div>
 
           <Button
@@ -460,19 +459,18 @@ export default function WorkoutDetail() {
       <AlertDialog open={showConflictDialog} onOpenChange={setShowConflictDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Treino em andamento</AlertDialogTitle>
+            <AlertDialogTitle>{t("workouts.conflictDialog.title")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Você já possui um treino ativo ({activeSession?.workout?.title || "Outro treino"}).
-              Iniciar um novo treino cancelará o atual. Deseja continuar?
+              {t("workouts.conflictDialog.description", { workout: activeSession?.workout?.title || t("workouts.otherWorkout") })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel>{t("actions.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmStart}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Encerrar anterior e Iniciar
+              {t("workouts.conflictDialog.confirm")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

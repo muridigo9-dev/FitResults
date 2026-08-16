@@ -21,6 +21,7 @@ import { useWorkoutExecution } from "@/hooks/useWorkoutExecution";
 import { Workout, Exercise } from "@/types/content";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useI18n } from "@/hooks/useI18n";
 
 interface SessionExerciseInstance extends Exercise {
     completedSets: { load: number; reps: number; rpe?: number }[];
@@ -35,6 +36,7 @@ interface WorkoutSessionManagerProps {
 }
 
 export function WorkoutSessionManager({ workout, onClose, sessionId }: WorkoutSessionManagerProps) {
+    const { t } = useI18n();
     const { logSet, updateFeedback, finishSession, isFinishing } = useWorkoutExecution();
 
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -66,9 +68,9 @@ export function WorkoutSessionManager({ workout, onClose, sessionId }: WorkoutSe
             const updated = [...exercises];
             updated[currentIndex].completedSets.push({ load, reps });
             setExercises(updated);
-            toast.success("Série registrada!");
+            toast.success(t("execution.setLogged"));
         } catch (err) {
-            toast.error("Erro ao salvar série");
+            toast.error(t("execution.setLogError"));
         }
     };
 
@@ -96,7 +98,7 @@ export function WorkoutSessionManager({ workout, onClose, sessionId }: WorkoutSe
             {/* Header */}
             <header className="px-4 py-4 flex items-center justify-between border-b bg-background/80 backdrop-blur-md sticky top-0 z-10">
                 <Button variant="ghost" size="icon" onClick={() => {
-                    if (confirm("Deseja interromper o treino? O progresso salvo será mantido.")) {
+                    if (confirm(t("execution.stopConfirm"))) {
                         onClose();
                     }
                 }}>
@@ -104,7 +106,7 @@ export function WorkoutSessionManager({ workout, onClose, sessionId }: WorkoutSe
                 </Button>
                 <div className="flex-1 px-8">
                     <div className="flex justify-between text-[10px] uppercase tracking-widest font-bold text-muted-foreground mb-1">
-                        <span>{Math.round(progress)}% Concluído</span>
+                        <span>{Math.round(progress)}% {t("states.completed")}</span>
                         <span>{currentIndex + 1} de {exercises.length}</span>
                     </div>
                     <Progress value={progress} className="h-1.5" />
@@ -129,7 +131,7 @@ export function WorkoutSessionManager({ workout, onClose, sessionId }: WorkoutSe
                                 className="w-full h-full object-cover"
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-6">
-                                <Badge className="w-fit mb-2 bg-primary">{currentExercise.category || "Força"}</Badge>
+                                <Badge className="w-fit mb-2 bg-primary">{currentExercise.category || t("workouts.categories.strength")}</Badge>
                                 <h1 className="text-3xl font-bold text-white">{currentExercise.name}</h1>
                                 <p className="text-white/70 text-sm mt-2 line-clamp-2">{currentExercise.description}</p>
                             </div>
@@ -140,7 +142,7 @@ export function WorkoutSessionManager({ workout, onClose, sessionId }: WorkoutSe
                             <div className="grid grid-cols-3 gap-4">
                                 <div className="bg-muted/50 p-3 rounded-xl text-center">
                                     <span className="text-[10px] uppercase font-bold text-muted-foreground block mb-1">Target</span>
-                                    <span className="text-lg font-bold">{currentExercise.sets} Séries</span>
+                                    <span className="text-lg font-bold">{currentExercise.sets} {t("workouts.sets")}</span>
                                 </div>
                                 <div className="bg-muted/50 p-3 rounded-xl text-center">
                                     <span className="text-[10px] uppercase font-bold text-muted-foreground block mb-1">Reps</span>
@@ -180,7 +182,7 @@ export function WorkoutSessionManager({ workout, onClose, sessionId }: WorkoutSe
                                         <div className="relative">
                                             <Input
                                                 type="number"
-                                                placeholder="Peso"
+                                                placeholder={t("checkin.weight")}
                                                 className="pl-8"
                                                 id="set-load"
                                             />
@@ -189,7 +191,7 @@ export function WorkoutSessionManager({ workout, onClose, sessionId }: WorkoutSe
                                         <div className="relative">
                                             <Input
                                                 type="number"
-                                                placeholder="Reps"
+                                                placeholder={t("workouts.reps")}
                                                 className="pl-8"
                                                 id="set-reps"
                                             />
@@ -209,7 +211,7 @@ export function WorkoutSessionManager({ workout, onClose, sessionId }: WorkoutSe
                             {/* Feedback & Actions */}
                             <div className="pt-6 border-t flex flex-col gap-4">
                                 <div className="flex items-center justify-between">
-                                    <span className="text-sm font-medium">Gostou desse exercício?</span>
+                                    <span className="text-sm font-medium">{t("execution.feedback.likedIt")}</span>
                                     <div className="flex gap-2">
                                         <Button
                                             variant={currentExercise.sentiment === 'like' ? 'default' : 'outline'}
@@ -233,7 +235,7 @@ export function WorkoutSessionManager({ workout, onClose, sessionId }: WorkoutSe
                                                 setExercises(updated);
                                             }}
                                         >
-                                            <ThumbsDown className="h-4 w-4" /> Não
+                                            <ThumbsDown className="h-4 w-4" /> {t("common.no")}
                                         </Button>
                                     </div>
                                 </div>
@@ -244,9 +246,9 @@ export function WorkoutSessionManager({ workout, onClose, sessionId }: WorkoutSe
                                     onClick={toggleExerciseComplete}
                                 >
                                     {currentExercise.isCompleted ? (
-                                        <><CheckCircle2 className="h-5 w-5" /> Concluído</>
+                                        <><CheckCircle2 className="h-5 w-5" /> {t("states.completed")}</>
                                     ) : (
-                                        <><ArrowRight className="h-5 w-5" /> Finalizar Exercício</>
+                                        <><ArrowRight className="h-5 w-5" /> {t("execution.finishExercise")}</>
                                     )}
                                 </Button>
                             </div>
@@ -270,7 +272,7 @@ export function WorkoutSessionManager({ workout, onClose, sessionId }: WorkoutSe
                         onClick={() => setCurrentIndex(currentIndex + 1)}
                         className="h-12"
                     >
-                        Próximo <ChevronRight className="ml-2 h-4 w-4" />
+                        {t("execution.next")} <ChevronRight className="ml-2 h-4 w-4" />
                     </Button>
                 ) : (
                     <Button

@@ -11,6 +11,8 @@ import {
   ExerciseFormData,
 } from "@/types/workout";
 import { useFeatureFlag } from "@/contexts/FeatureFlagsContext";
+import { useI18nSafe } from "./useI18nSafe";
+import { localizedField } from "@/lib/contentI18n";
 import type { BlockReason } from "./useUserCapabilities";
 // import { useUnifiedVisibility } from "./useUnifiedVisibility"; // Removed redundancy
 
@@ -20,9 +22,10 @@ import type { BlockReason } from "./useUserCapabilities";
 
 export function useMuscleGroups() {
   const { user } = useAuth();
+  const { language } = useI18nSafe();
 
   const { data: muscleGroups = [], isLoading, error } = useQuery({
-    queryKey: ["muscle-groups", user?.id],
+    queryKey: ["muscle-groups", user?.id, language],
     enabled: !!user,
     staleTime: 1000 * 60 * 30, // 30 minutes (rarely changes)
     queryFn: async () => {
@@ -39,7 +42,7 @@ export function useMuscleGroups() {
 
       return typedData.map((mg): MuscleGroup => ({
         id: mg.id,
-        name: mg.name,
+        name: localizedField(mg, "name", language),
         slug: mg.slug || mg.name.toLowerCase().replace(/\s+/g, '-'),
         nameEn: mg.name_en,
         category: mg.category as MuscleGroup['category'],
@@ -84,10 +87,11 @@ export function useExercises(filters?: ExerciseFilters) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { isEnabled } = useFeatureFlag('exercises_enabled');
+  const { language } = useI18nSafe();
 
   // Fetch exercises
   const { data: exercises = [], isLoading, error, refetch } = useQuery({
-    queryKey: ["exercises", user?.id, filters],
+    queryKey: ["exercises", user?.id, filters, language],
     enabled: !!user && isEnabled,
     staleTime: 0, // DISABLED CACHE for Admin immediate updates
     queryFn: async () => {
@@ -114,7 +118,13 @@ export function useExercises(filters?: ExerciseFilters) {
         query = query.eq("is_compound", filters.isCompound);
       }
       if (filters?.search) {
-        query = query.ilike("name", `%${filters.search}%`);
+        // Search every language, so an English or Spanish name finds the
+        // exercise even though the base column is pt-BR. Commas and parens
+        // would break PostgREST's or() syntax.
+        const term = filters.search.replace(/[,()]/g, " ").trim();
+        query = query.or(
+          `name.ilike.%${term}%,name_en.ilike.%${term}%,name_es.ilike.%${term}%`
+        );
       }
       if (filters?.tags && filters.tags.length > 0) {
         query = query.contains("tags", filters.tags);
@@ -129,10 +139,10 @@ export function useExercises(filters?: ExerciseFilters) {
 
       return (typedData || []).map((ex): Exercise => ({
         id: ex.id,
-        name: ex.name,
+        name: localizedField(ex, "name", language),
         slug: ex.slug || ex.name.toLowerCase().replace(/\s+/g, '-'),
-        description: ex.description,
-        instructions: ex.instructions,
+        description: localizedField(ex, "description", language),
+        instructions: localizedField(ex, "instructions", language),
         imageUrl: ex.image_url || (ex.image_path ? supabase.storage.from('exercises-media').getPublicUrl(ex.image_path).data.publicUrl : undefined),
         imagePath: ex.image_path,
         gifUrl: ex.gif_url,
@@ -141,7 +151,7 @@ export function useExercises(filters?: ExerciseFilters) {
         primaryMuscleGroupId: ex.primary_muscle_group_id,
         primaryMuscleGroup: ex.primary_muscle_group ? {
           id: ex.primary_muscle_group.id,
-          name: ex.primary_muscle_group.name,
+          name: localizedField(ex.primary_muscle_group, "name", language),
           slug: ex.primary_muscle_group.slug,
           category: ex.primary_muscle_group.category,
           sortOrder: ex.primary_muscle_group.sort_order || 0,
@@ -359,9 +369,10 @@ export function useExercises(filters?: ExerciseFilters) {
 
 export function useExercise(id: string | undefined) {
   const { user } = useAuth();
+  const { language } = useI18nSafe();
 
   return useQuery({
-    queryKey: ["exercise", id],
+    queryKey: ["exercise", id, language],
     enabled: !!user && !!id,
     staleTime: 0, // DISABLED CACHE
     queryFn: async () => {
@@ -386,10 +397,10 @@ export function useExercise(id: string | undefined) {
 
       const exercise: Exercise = {
         id: typedData.id,
-        name: typedData.name,
+        name: localizedField(typedData, "name", language),
         slug: typedData.slug,
-        description: typedData.description,
-        instructions: typedData.instructions,
+        description: localizedField(typedData, "description", language),
+        instructions: localizedField(typedData, "instructions", language),
         imageUrl: typedData.image_url || (typedData.image_path ? supabase.storage.from('exercises-media').getPublicUrl(typedData.image_path).data.publicUrl : undefined),
         imagePath: typedData.image_path,
         gifUrl: typedData.gif_url,
@@ -398,7 +409,7 @@ export function useExercise(id: string | undefined) {
         primaryMuscleGroupId: typedData.primary_muscle_group_id,
         primaryMuscleGroup: typedData.primary_muscle_group ? {
           id: typedData.primary_muscle_group.id,
-          name: typedData.primary_muscle_group.name,
+          name: localizedField(typedData.primary_muscle_group, "name", language),
           slug: typedData.primary_muscle_group.slug,
           category: typedData.primary_muscle_group.category as MuscleGroup['category'],
           sortOrder: typedData.primary_muscle_group.sort_order || 0,
@@ -408,7 +419,7 @@ export function useExercise(id: string | undefined) {
         } : undefined,
         secondaryMuscleGroups: typedData.secondary_muscles?.map((sm: any) => ({
           id: sm.muscle_group.id,
-          name: sm.muscle_group.name,
+          name: localizedField(sm.muscle_group, "name", language),
           slug: sm.muscle_group.slug,
           category: sm.muscle_group.category as MuscleGroup['category'],
           sortOrder: sm.muscle_group.sort_order || 0,

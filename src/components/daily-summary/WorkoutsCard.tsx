@@ -15,12 +15,14 @@ import {
     DrawerFooter
 } from "@/components/ui/drawer";
 import { toast } from "sonner";
+import { useI18n } from "@/hooks/useI18n";
 
 interface WorkoutsCardProps {
     data: any[];
 }
 
 function WorkoutDetailDrawer({ workout, onClose }: { workout: any; onClose: () => void }) {
+    const { t } = useI18n();
     const [isEditing, setIsEditing] = useState(false);
     const [editedExercises, setEditedExercises] = useState(workout.exercises);
 
@@ -47,15 +49,15 @@ function WorkoutDetailDrawer({ workout, onClose }: { workout: any; onClose: () =
                 }
             }
             setIsEditing(false);
-            toast.success("Treino atualizado com sucesso!");
+            toast.success(t("workouts.toast.updated"));
         } catch (error) {
             console.error(error);
-            toast.error("Erro ao salvar alterações");
+            toast.error(t("summary.errors.saveChanges"));
         }
     };
 
     const handleDelete = () => {
-        if (confirm("Tem certeza que deseja excluir todo este registro de treino? Esta ação não pode ser desfeita.")) {
+        if (confirm(t("summary.workouts.deleteConfirm"))) {
             (window as any).removeWorkoutLog?.(workout.id);
             onClose();
         }
@@ -71,7 +73,7 @@ function WorkoutDetailDrawer({ workout, onClose }: { workout: any; onClose: () =
                             {workout.title}
                         </DrawerTitle>
                         <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest">
-                            {workout.duration} MIN • {workout.calories || 0} KCAL
+                            {workout.duration} {t("units.minutes").toUpperCase()} • {workout.calories || 0} {t("units.kcal").toUpperCase()}
                         </p>
                     </div>
                     <div className="flex items-center gap-2">
@@ -111,7 +113,7 @@ function WorkoutDetailDrawer({ workout, onClose }: { workout: any; onClose: () =
                                 </div>
                                 {exercise.completed && (
                                     <Badge variant="secondary" className="bg-green-500/10 text-green-600 border-none text-[8px] font-black h-5">
-                                        CONCLUÍDO
+                                        {t("states.completed").toUpperCase()}
                                     </Badge>
                                 )}
                             </div>
@@ -179,7 +181,7 @@ function WorkoutDetailDrawer({ workout, onClose }: { workout: any; onClose: () =
                         onClick={handleSave}
                     >
                         <Save className="h-5 w-5" />
-                        SALVAR ALTERAÇÕES
+                        {t("actions.saveChanges").toUpperCase()}
                     </Button>
                 ) : (
                     <DrawerClose asChild>
@@ -194,6 +196,7 @@ function WorkoutDetailDrawer({ workout, onClose }: { workout: any; onClose: () =
 }
 
 export function WorkoutsCard({ data }: WorkoutsCardProps) {
+    const { t } = useI18n();
     const navigate = useNavigate();
     const [openDrawerId, setOpenDrawerId] = useState<string | null>(null);
 
@@ -228,7 +231,7 @@ export function WorkoutsCard({ data }: WorkoutsCardProps) {
                 <div className="flex items-center justify-between">
                     <CardTitle className="text-sm font-black flex items-center gap-2">
                         <Zap className="h-4 w-4 text-primary fill-primary/20" />
-                        Atividade Física
+                        {t("summary.workouts.title")}
                     </CardTitle>
                     <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-primary/10 text-primary uppercase">
                         {data.length} {data.length === 1 ? 'REGISTRO' : 'REGISTROS'}

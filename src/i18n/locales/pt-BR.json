@@ -115,7 +115,68 @@
     "connected": "Conectado",
     "disconnected": "Desconectado",
     "verified": "Verificado",
-    "unverified": "Não verificado"
+    "unverified": "Não verificado",
+    "errorDescription": "Não foi possível carregar os dados. Tente novamente.",
+    "blocked": {
+      "notAuthenticated": {
+        "title": "Login Necessário",
+        "message": "Faça login para acessar este conteúdo.",
+        "action": "Fazer Login"
+      },
+      "featureDisabled": {
+        "title": "Funcionalidade Indisponível",
+        "message": "Esta funcionalidade está temporariamente desativada."
+      },
+      "planRequired": {
+        "title": "Conteúdo Premium",
+        "message": "Este conteúdo está disponível em planos específicos.",
+        "action": "Ver Planos"
+      },
+      "roleInsufficient": {
+        "title": "Acesso Restrito",
+        "message": "Você não tem permissão para acessar este conteúdo."
+      },
+      "visibilityRestricted": {
+        "title": "Conteúdo Restrito",
+        "message": "Este conteúdo não está disponível para você."
+      },
+      "default": {
+        "title": "Nenhum Conteúdo",
+        "message": "Nenhum conteúdo encontrado."
+      }
+    },
+    "emptyStates": {
+      "workouts": {
+        "title": "Nenhum treino encontrado",
+        "description": "Comece criando seu primeiro treino personalizado ou aguarde seu personal atribuir um para você."
+      },
+      "diets": {
+        "title": "Nenhuma dieta encontrada",
+        "description": "Monte sua primeira dieta ou aguarde seu nutricionista criar uma para você.",
+        "action": "Criar Dieta"
+      },
+      "challenges": {
+        "title": "Nenhum desafio ativo",
+        "description": "Desafios são uma ótima forma de manter a motivação! Crie um novo ou participe de desafios da comunidade.",
+        "action": "Criar Desafio"
+      },
+      "health": {
+        "title": "Sem dados de saúde",
+        "description": "Comece registrando suas métricas de saúde para acompanhar sua evolução."
+      },
+      "checkins": {
+        "title": "Nenhum check-in registrado",
+        "description": "Faça seu primeiro check-in diário para começar a acompanhar seu progresso!"
+      },
+      "community": {
+        "title": "Nenhum usuário no ranking",
+        "description": "A comunidade ainda está crescendo. Seja um dos primeiros a participar!"
+      },
+      "search": {
+        "withQuery": "Não encontramos resultados para \"{query}\". Tente outros termos de busca.",
+        "noQuery": "Refine sua busca para encontrar o que procura."
+      }
+    }
   },
   "auth": {
     "login": "Entrar",
@@ -587,7 +648,22 @@
     "addNotes": "Adicionar notas",
     "optional": "opcional",
     "glasses": "copos",
-    "liters": "litros"
+    "liters": "litros",
+    "congrats": "Parabéns!",
+    "noChallenge": "Nenhum desafio",
+    "notLogged": "Não registrado",
+    "reviewFullDay": "Revisar meu dia completo",
+    "status": {
+      "notStarted": "Não iniciado",
+      "inProgress": "Em andamento",
+      "complete": "Completo"
+    },
+    "moods": {
+      "great": "Ótimo",
+      "good": "Bem",
+      "okay": "Ok",
+      "bad": "Mal"
+    }
   },
   "nutrition": {
     "title": "Nutrição",
@@ -620,6 +696,32 @@
       "protein": "Essencial para manutenção e ganho muscular.",
       "carbs": "Principal fonte de energia para treinos.",
       "fat": "Importante para hormônios e absorção de vitaminas."
+    },
+    "mealTypes": {
+      "breakfast": "Café da Manhã",
+      "lunch": "Almoço",
+      "dinner": "Jantar",
+      "snack": "Lanche",
+      "other": "Geral"
+    },
+    "logMeal": {
+      "title": "Registrar Consumo",
+      "srTitle": "Registrar Consumo de Refeição",
+      "srDescription": "Selecione uma refeição da lista ou use a busca para registrar seu consumo no diário.",
+      "searchPlaceholder": "Buscar por nome ou ingrediente...",
+      "noSuggestions": "Nenhuma sugestão encontrada.",
+      "itemCount": "{count} itens",
+      "closeList": "Fechar Lista"
+    },
+    "consumption": {
+      "title": "Registrar Consumo",
+      "question": "Quanto você comeu do prato",
+      "smartPortion": "Porção Inteligente Sugerida",
+      "standardPortion": "Porção Padrão",
+      "less": "Menos",
+      "more": "Mais",
+      "adjustHint": "Ajuste se você comeu mais ou menos que o sugerido.",
+      "confirm": "Confirmar Consumo"
     }
   },
   "challenges": {
@@ -1389,7 +1491,50 @@
     "flexibility": "Flexibilidade",
     "difficulty": "Dificuldade",
     "equipment": "Equipamento",
-    "noEquipment": "Sem equipamento"
+    "noEquipment": "Sem equipamento",
+    "untitled": "Treino sem título",
+    "subtitle": "Explore treinos e alcance seus objetivos",
+    "exercisesShort": "exerc.",
+    "setsShort": "séries",
+    "categories": {
+      "cardio": "Cardio",
+      "strength": "Musculação",
+      "hiit": "HIIT",
+      "flexibility": "Flexibilidade",
+      "yoga": "Yoga",
+      "taichi": "Tai Chi",
+      "functional": "Funcional",
+      "calisthenics": "Calistenia",
+      "stretching": "Alongamento"
+    },
+    "toast": {
+      "created": "Treino criado com sucesso!",
+      "updated": "Treino atualizado com sucesso!",
+      "deleted": "Treino excluído!"
+    },
+    "deleteDialog": {
+      "title": "Excluir treino?",
+      "description": "Esta ação não pode ser desfeita. O treino será removido permanentemente."
+    },
+    "empty": {
+      "systemTitle": "Nenhum treino disponível",
+      "systemDescription": "Os treinos serão adicionados em breve pelo administrador.",
+      "userTitle": "Crie seus próprios treinos",
+      "creationDisabled": "A criação de treinos está desabilitada no momento.",
+      "createFirst": "Criar Primeiro Treino"
+    },
+    "backToWorkouts": "Voltar para treinos",
+    "generalMuscleGroup": "Geral",
+    "noDescription": "Sem descrição.",
+    "noInstructions": "Nenhuma instrução detalhada disponível.",
+    "noPause": "SEM PAUSA",
+    "inSequence": "Em sequência",
+    "otherWorkout": "Outro treino",
+    "conflictDialog": {
+      "title": "Treino em andamento",
+      "description": "Você já possui um treino ativo ({workout}). Iniciar um novo treino cancelará o atual. Deseja continuar?",
+      "confirm": "Encerrar anterior e Iniciar"
+    }
   },
   "diets": {
     "title": "Planos Alimentares",
@@ -1424,10 +1569,42 @@
     "dinner": "Jantar",
     "snack": "Lanche",
     "preworkout": "Pré-treino",
-    "postworkout": "Pós-treino"
+    "postworkout": "Pós-treino",
+    "untitled": "Dieta sem título",
+    "mealsUpdated": "Refeições atualizadas",
+    "mealsLogged": "{count} refeição(ões) registrada(s)",
+    "noMealsLogged": "Nenhuma refeição registrada",
+    "whatDidYouEatToday": "O que você comeu hoje?",
+    "logNewMeal": "Registrar nova refeição",
+    "logged": "Registradas",
+    "dayTotal": "Total do dia",
+    "filterDishes": "Filtrar pratos recomendados...",
+    "mealsUnit": "refeições",
+    "empty": {
+      "userTitle": "Seus Pratos Personalizados",
+      "createHint": "Crie pratos que se encaixam na sua rotina e preferências.",
+      "creationDisabled": "A criação de pratos personalizados não está disponível no momento.",
+      "createFirst": "Criar Primeiro Prato",
+      "noPlansTitle": "Nenhum plano alimentar",
+      "noPlansDescription": "Você ainda não possui um plano alimentar atribuído. Converse com seu treinador ou nutricionista.",
+      "noSuggestionsTitle": "Nenhuma sugestão disponível",
+      "noSuggestionsDescription": "Seu nutricionista ou academia ainda não adicionaram pratos."
+    },
+    "deleteDialog": {
+      "title": "Excluir prato?",
+      "description": "Esta ação não pode ser desfeita. O prato será removido permanentemente.",
+      "confirm": "Confirmar Exclusão"
+    }
   },
   "exercises": {
     "explore": "Explorar",
+    "history": {
+      "empty": "Nenhum histórico encontrado.",
+      "emptyHint": "Complete este exercício para ver sua evolução.",
+      "individualExecution": "Execução Individual",
+      "freeWorkout": "Treino Livre",
+      "unknownDate": "Data desconhecida"
+    },
     "searchPlaceholder": "Buscar exercícios...",
     "clear": "Limpar",
     "clearAll": "Limpar tudo",
@@ -1642,6 +1819,72 @@
       "passwordRequired": "Senha é obrigatória",
       "passwordMin": "A senha deve ter pelo menos 6 caracteres",
       "selectPlan": "Selecione um plano"
+    }
+  },
+  "summary": {
+    "monthly": "Resumo Mensal",
+    "yearly": "Resumo Anual",
+    "weekOf": "Semana de {start} - {end}",
+    "thisWeek": "Esta Semana",
+    "thisMonth": "Este Mês",
+    "thisYear": "Este Ano",
+    "showLess": "Mostrar menos",
+    "hiddenItems": "+{count} itens ocultos",
+    "completedCount": "{count} concluídos",
+    "noneActive": "Nenhum ativo",
+    "errors": {
+      "saveChanges": "Erro ao salvar alterações"
+    },
+    "workouts": {
+      "title": "Atividade Física",
+      "deleteConfirm": "Tem certeza que deseja excluir todo este registro de treino? Esta ação não pode ser desfeita."
+    },
+    "nutrition": {
+      "deleteTitle": "Excluir Refeição?",
+      "deleteDescription": "Isso removerá \"{title}\" permanentemente do seu histórico.",
+      "adjustPortions": "Ajuste as Porções...",
+      "noMeals": "Nenhuma refeição registrada.",
+      "logFirst": "Registrar primeira refeição",
+      "mealCount": "{count} refeições"
+    },
+    "motivation": {
+      "high": "Excelente dia! Continue assim!",
+      "medium": "Bom progresso! Cada passo conta.",
+      "low": "Todo começo é válido. Vamos lá!"
+    }
+  },
+  "execution": {
+    "loadErrorTitle": "Erro ao carregar treino",
+    "loadErrorMessage": "Não foi possível carregar a sessão de treino.",
+    "progress": "Progresso",
+    "currentExercise": "Exercício atual",
+    "next": "Próximo",
+    "nextExercise": "Próximo exercício",
+    "after": "Após",
+    "finish": "Finalizar",
+    "end": "Encerrar",
+    "abandonTitle": "Abandonar treino?",
+    "abandonDescription": "Seu progresso será salvo, mas o treino será marcado como abandonado. Você pode continuar de onde parou depois.",
+    "keepTraining": "Continuar treinando",
+    "abandon": "Abandonar",
+    "incompleteTitle": "Treino incompleto",
+    "incompleteDescription": "Você ainda não completou todos os exercícios. Deseja finalizar mesmo assim?",
+    "finishAnyway": "Finalizar mesmo assim",
+    "finishExercise": "Finalizar Exercício",
+    "workoutComplete": "Treino Concluído!",
+    "setLogged": "Série registrada!",
+    "setLogError": "Erro ao salvar série",
+    "stopConfirm": "Deseja interromper o treino? O progresso salvo será mantido.",
+    "letsGo": "Vamos lá!",
+    "doneToday": "Concluído Hoje",
+    "feedback": {
+      "dislike": "Não gostei",
+      "likedIt": "Gostou desse exercício?",
+      "difficulty": "Dificuldade do exercício",
+      "overallRating": "Avaliação geral",
+      "addComment": "Adicionar comentário",
+      "exercisePlaceholder": "Alguma observação sobre o exercício?",
+      "workoutPlaceholder": "Alguma observação sobre o treino? (opcional)"
     }
   }
 }

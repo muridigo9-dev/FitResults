@@ -31,8 +31,10 @@ import { RestTimerModal } from "@/components/workout/RestTimer";
 import { WorkoutCompleteFeedback } from "@/components/workout/ExerciseFeedback";
 import type { ExerciseFeedbackMood, LikeDislike } from "@/types/workout";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/hooks/useI18n";
 
 export default function WorkoutExecution() {
+    const { t } = useI18n();
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
 
@@ -183,12 +185,12 @@ export default function WorkoutExecution() {
       <AppLayout hideHeader>
         <div className="container max-w-2xl mx-auto py-8 text-center">
           <AlertCircle className="h-12 w-12 mx-auto text-destructive mb-4" />
-          <h2 className="text-xl font-semibold mb-2">Erro ao carregar treino</h2>
+          <h2 className="text-xl font-semibold mb-2">{t("execution.loadErrorTitle")}</h2>
           <p className="text-muted-foreground mb-4">
-            Não foi possível carregar a sessão de treino.
+            {t("execution.loadErrorMessage")}
           </p>
           <Button onClick={() => navigate("/workouts")}>
-            Voltar para treinos
+            {t("workouts.backToWorkouts")}
           </Button>
         </div>
       </AppLayout>
@@ -229,7 +231,7 @@ export default function WorkoutExecution() {
               </Button>
               <div>
                 <h1 className="font-semibold line-clamp-1">
-                  {session.workout?.title || "Treino"}
+                  {session.workout?.title || t("dashboard.workout")}
                 </h1>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Timer className="h-3.5 w-3.5" />
@@ -263,9 +265,9 @@ export default function WorkoutExecution() {
           {/* Progress Bar */}
           <div className="mt-3">
             <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-              <span>Progresso</span>
+              <span>{t("execution.progress")}</span>
               <span>
-                {progress?.exercisesCompleted}/{progress?.exercisesTotal} exercícios
+                {progress?.exercisesCompleted}/{progress?.exercisesTotal} {t("workouts.exercises").toLowerCase()}
               </span>
             </div>
             <Progress value={progress?.exercisesPercent || 0} className="h-2" />
@@ -298,14 +300,14 @@ export default function WorkoutExecution() {
           <Card className="mb-6 border-primary/50 bg-primary/5">
             <CardContent className="p-4">
               <p className="text-xs text-primary font-medium uppercase tracking-wide mb-1">
-                Exercício atual
+                {t("execution.currentExercise")}
               </p>
               <h2 className="text-xl font-bold">
                 {progress.currentExercise.exercise?.name}
               </h2>
               {progress.nextExercise && (
                 <p className="text-sm text-muted-foreground mt-1">
-                  Próximo: {progress.nextExercise.exercise?.name}
+                  {t("execution.next")}: {progress.nextExercise.exercise?.name}
                 </p>
               )}
             </CardContent>
@@ -354,7 +356,7 @@ export default function WorkoutExecution() {
                   </div>
                   <div className="flex items-center gap-1">
                     <Dumbbell className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
-                    <span>{progress?.setsCompleted || 0}<span className="hidden xs:inline"> séries</span></span>
+                    <span>{progress?.setsCompleted || 0}<span className="hidden xs:inline"> {t("workouts.sets").toLowerCase()}</span></span>
                   </div>
                 </div>
               </div>
@@ -373,10 +375,10 @@ export default function WorkoutExecution() {
                 {progress?.exercisesPercent === 100 ? (
                   <>
                     <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-1.5 sm:mr-2" />
-                    <span className="text-sm sm:text-base">Finalizar</span>
+                    <span className="text-sm sm:text-base">{t("execution.finish")}</span>
                   </>
                 ) : (
-                  "Encerrar"
+                  t("execution.end")
                 )}
               </Button>
             </div>
@@ -387,19 +389,18 @@ export default function WorkoutExecution() {
         <AlertDialog open={showAbandonDialog} onOpenChange={setShowAbandonDialog}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Abandonar treino?</AlertDialogTitle>
+              <AlertDialogTitle>{t("execution.abandonTitle")}</AlertDialogTitle>
               <AlertDialogDescription>
-                Seu progresso será salvo, mas o treino será marcado como abandonado.
-                Você pode continuar de onde parou depois.
+                {t("execution.abandonDescription")}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Continuar treinando</AlertDialogCancel>
+              <AlertDialogCancel>{t("execution.keepTraining")}</AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleAbandon}
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >
-                Abandonar
+                {t("execution.abandon")}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -409,16 +410,15 @@ export default function WorkoutExecution() {
         <AlertDialog open={showIncompleteDialog} onOpenChange={setShowIncompleteDialog}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Treino incompleto</AlertDialogTitle>
+              <AlertDialogTitle>{t("execution.incompleteTitle")}</AlertDialogTitle>
               <AlertDialogDescription>
-                Você ainda não completou todos os exercícios.
-                Deseja finalizar mesmo assim?
+                {t("execution.incompleteDescription")}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Voltar</AlertDialogCancel>
+              <AlertDialogCancel>{t("actions.back")}</AlertDialogCancel>
               <AlertDialogAction onClick={handleConfirmFinishIncomplete}>
-                Finalizar mesmo assim
+                {t("execution.finishAnyway")}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

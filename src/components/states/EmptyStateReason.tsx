@@ -2,6 +2,7 @@ import { AlertCircle, Lock, LogIn, ShieldAlert, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import type { BlockReason } from "@/hooks/useUserCapabilities";
+import { useI18n } from "@/hooks/useI18n";
 
 interface EmptyStateReasonProps {
     reason: BlockReason;
@@ -22,54 +23,55 @@ export function EmptyStateReason({
     className = "",
 }: EmptyStateReasonProps) {
     const navigate = useNavigate();
+    const { t } = useI18n();
 
     const getConfig = () => {
         switch (reason) {
             case "not_authenticated":
                 return {
                     icon: LogIn,
-                    defaultTitle: "Login Necessário",
-                    defaultMessage: "Faça login para acessar este conteúdo.",
-                    actionLabel: "Fazer Login",
+                    defaultTitle: t("states.blocked.notAuthenticated.title"),
+                    defaultMessage: t("states.blocked.notAuthenticated.message"),
+                    actionLabel: t("states.blocked.notAuthenticated.action"),
                     actionFn: () => navigate("/login"),
                 };
             case "feature_disabled":
                 return {
                     icon: AlertCircle,
-                    defaultTitle: "Funcionalidade Indisponível",
-                    defaultMessage: "Esta funcionalidade está temporariamente desativada.",
+                    defaultTitle: t("states.blocked.featureDisabled.title"),
+                    defaultMessage: t("states.blocked.featureDisabled.message"),
                     actionLabel: null,
                     actionFn: null,
                 };
             case "plan_required":
                 return {
                     icon: Lock,
-                    defaultTitle: "Conteúdo Premium",
-                    defaultMessage: "Este conteúdo está disponível em planos específicos.",
-                    actionLabel: "Ver Planos",
+                    defaultTitle: t("states.blocked.planRequired.title"),
+                    defaultMessage: t("states.blocked.planRequired.message"),
+                    actionLabel: t("states.blocked.planRequired.action"),
                     actionFn: () => navigate("/plans"),
                 };
             case "role_insufficient":
                 return {
                     icon: ShieldAlert,
-                    defaultTitle: "Acesso Restrito",
-                    defaultMessage: "Você não tem permissão para acessar este conteúdo.",
+                    defaultTitle: t("states.blocked.roleInsufficient.title"),
+                    defaultMessage: t("states.blocked.roleInsufficient.message"),
                     actionLabel: null,
                     actionFn: null,
                 };
             case "visibility_restricted":
                 return {
                     icon: Eye,
-                    defaultTitle: "Conteúdo Restrito",
-                    defaultMessage: "Este conteúdo não está disponível para você.",
+                    defaultTitle: t("states.blocked.visibilityRestricted.title"),
+                    defaultMessage: t("states.blocked.visibilityRestricted.message"),
                     actionLabel: null,
                     actionFn: null,
                 };
             default:
                 return {
                     icon: AlertCircle,
-                    defaultTitle: "Nenhum Conteúdo",
-                    defaultMessage: "Nenhum conteúdo encontrado.",
+                    defaultTitle: t("states.blocked.default.title"),
+                    defaultMessage: t("states.blocked.default.message"),
                     actionLabel: null,
                     actionFn: null,
                 };

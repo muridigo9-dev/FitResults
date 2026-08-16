@@ -1,7 +1,6 @@
 "use client";
 
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { Calendar, TrendingUp, RotateCcw, Dumbbell } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useExerciseHistory } from "@/hooks/useExerciseHistory";
@@ -20,6 +19,8 @@ import {
     Area,
     AreaChart
 } from "recharts";
+import { useDateLocale } from "@/lib/dateLocale";
+import { useI18n } from "@/hooks/useI18n";
 
 interface ExerciseHistoryProps {
     exerciseId?: string;
@@ -34,6 +35,8 @@ export function ExerciseHistory({
     className,
     trigger
 }: ExerciseHistoryProps) {
+    const dateLocale = useDateLocale();
+    const { t } = useI18n();
     const { data: history, isLoading } = useExerciseHistory(exerciseId);
 
     // Prepare chart data
@@ -123,8 +126,8 @@ export function ExerciseHistory({
                         {(!history || history.length === 0) && (
                             <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
                                 <RotateCcw className="h-12 w-12 mb-4 opacity-20" />
-                                <p>Nenhum histórico encontrado.</p>
-                                <p className="text-xs mt-2">Complete este exercício para ver sua evolução.</p>
+                                <p>{t("exercises.history.empty")}</p>
+                                <p className="text-xs mt-2">{t("exercises.history.emptyHint")}</p>
                             </div>
                         )}
                         {history && history.map((session: any) => {
@@ -136,7 +139,9 @@ export function ExerciseHistory({
 
                             // Title Logic
                             const workoutTitle = session.session?.workout?.title ||
-                                (session.session?.metadata?.exercise_name ? "Execução Individual" : "Treino Livre");
+                                (session.session?.metadata?.exercise_name
+                                    ? t("exercises.history.individualExecution")
+                                    : t("exercises.history.freeWorkout"));
 
                             return (
                                 <div key={session.id} className="relative pl-6 pb-2 border-l border-border last:border-0 opacity-0 animate-in fade-in slide-in-from-left-2 duration-300" style={{ animationFillMode: 'forwards' }}>
@@ -161,8 +166,8 @@ export function ExerciseHistory({
                                             <span className="text-xs text-muted-foreground flex items-center gap-1">
                                                 <Calendar className="h-3 w-3" />
                                                 {(session.completedAt || session.session?.startedAt)
-                                                    ? format(new Date(session.completedAt || session.session?.startedAt), "d 'de' MMMM, yyyy", { locale: ptBR })
-                                                    : "Data desconhecida"
+                                                    ? format(new Date(session.completedAt || session.session?.startedAt), "PPP", { locale: dateLocale })
+                                                    : t("exercises.history.unknownDate")
                                                 }
                                             </span>
                                         </div>

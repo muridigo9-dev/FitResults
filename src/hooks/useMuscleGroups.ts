@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { MuscleGroup, ExerciseMuscleGroup } from "@/types/personalTrainer";
 import { useFeatureFlag } from "@/contexts/FeatureFlagsContext";
+import { useI18nSafe } from "./useI18nSafe";
+import { localizedField } from "@/lib/contentI18n";
 
 const EMPTY_ARRAY: any[] = [];
 
@@ -11,9 +13,10 @@ const EMPTY_ARRAY: any[] = [];
  */
 export function useMuscleGroups() {
   const { isEnabled } = useFeatureFlag("training_mode_enabled");
+  const { language } = useI18nSafe();
 
   const { data: muscleGroups = EMPTY_ARRAY, isLoading } = useQuery({
-    queryKey: ["muscle-groups"],
+    queryKey: ["muscle-groups", language],
     enabled: isEnabled,
     queryFn: async () => {
       const { data, error } = await (supabase as any)
@@ -22,7 +25,10 @@ export function useMuscleGroups() {
         .order("sort_order", { ascending: true });
 
       if (error) throw error;
-      return data as MuscleGroup[];
+      return (data || []).map((mg: any) => ({
+        ...mg,
+        name: localizedField(mg, "name", language),
+      })) as MuscleGroup[];
     },
     staleTime: 1000 * 60 * 30, // Cache for 30 minutes
   });

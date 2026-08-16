@@ -1,8 +1,8 @@
 import { DiaryEntry, MealLogEntry } from "@/types/diary";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { Clock, Calendar } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useDateLocale } from "@/lib/dateLocale";
 
 interface DishHistoryProps {
     entries: DiaryEntry[];
@@ -17,6 +17,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 
 export function DishHistory({ entries }: DishHistoryProps) {
+    const dateLocale = useDateLocale();
     if (entries.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center py-10 text-muted-foreground text-center">
@@ -52,7 +53,7 @@ export function DishHistory({ entries }: DishHistoryProps) {
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <p className="font-semibold text-sm capitalize truncate">
-                                            {format(date, "EEE, d MMM", { locale: ptBR })}
+                                            {format(date, "EEE, d MMM", { locale: dateLocale })}
                                         </p>
                                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                             <span>{format(date, "HH:mm")}</span>

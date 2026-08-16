@@ -291,14 +291,19 @@ export default function WorkoutDetail() {
                       )}
                     </div>
 
-                    {/* Media */}
-                    <div className="aspect-video w-full max-h-[45vh] lg:max-h-[50vh] rounded-2xl overflow-hidden bg-muted relative mb-4 shadow-sm border border-border/50 shrink-0">
+                    {/* Media. The box hugs the clip rather than imposing 16:9
+                        on it: the demonstrations are shot portrait (720x1280),
+                        and object-cover in a landscape frame cropped the head
+                        and feet off every one of them. Matching
+                        ExerciseDetailView keeps the whole movement visible
+                        without letterbox bars. */}
+                    <div className="w-fit max-w-full mx-auto rounded-2xl overflow-hidden bg-muted relative mb-4 shadow-sm border border-border/50 shrink-0 flex items-center justify-center">
                       <ExerciseMedia
                         exercise={exercise}
                         isActive={index === currentSlideIndex}
-                        className="w-full h-full object-cover"
+                        className="max-h-[45vh] lg:max-h-[50vh] w-auto max-w-full object-contain"
                         fallback={
-                          <div className="w-full h-full flex items-center justify-center bg-muted">
+                          <div className="min-w-[220px] min-h-[180px] flex items-center justify-center bg-muted">
                             <Dumbbell className="h-8 w-8 text-muted-foreground/30" />
                           </div>
                         }
@@ -328,14 +333,14 @@ export default function WorkoutDetail() {
                             <DialogTitle>{exercise.name}</DialogTitle>
                           </DialogHeader>
                           <div className="mt-4 space-y-4">
-                            <div className="aspect-video rounded-lg overflow-hidden bg-muted flex items-center justify-center bg-black/5">
+                            <div className="w-fit max-w-full mx-auto rounded-lg overflow-hidden bg-muted flex items-center justify-center bg-black/5">
                               {/* ExerciseMedia walks every source; a clip gets
                                   its controls so it can be watched here. */}
                               <ExerciseMedia
                                 exercise={exercise}
                                 controls={hasExerciseVideo(exercise)}
                                 loading="eager"
-                                className="w-full h-full object-contain"
+                                className="max-h-[60vh] w-auto max-w-full object-contain"
                                 fallback={
                                   <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-muted-foreground p-6 text-center">
                                     <VideoOff className="h-7 w-7 opacity-40" />

@@ -278,14 +278,14 @@ export function WorkoutExecutionCard({
                       video_url, which is what actually holds the clips, and
                       gives a video its controls so it can be watched here
                       rather than only looping. */}
-                  <div className="relative aspect-video sm:aspect-auto sm:h-[400px] w-full rounded-lg overflow-hidden bg-muted shadow-sm border mx-auto">
+                  <div className="relative w-fit max-w-full mx-auto rounded-lg overflow-hidden bg-muted shadow-sm border flex items-center justify-center">
                     <ExerciseMedia
                       exercise={exercise}
                       controls={hasVideo}
                       loading="eager"
-                      className="w-full h-full object-contain bg-background"
+                      className="max-h-[60vh] w-auto max-w-full object-contain bg-background"
                       fallback={
-                        <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-muted-foreground p-6 text-center">
+                        <div className="min-w-[220px] min-h-[160px] flex flex-col items-center justify-center gap-2 text-muted-foreground p-6 text-center">
                           <VideoOff className="h-7 w-7 opacity-40" />
                           <p className="text-xs">{t("workouts.noVideo")}</p>
                         </div>

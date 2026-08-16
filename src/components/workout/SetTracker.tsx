@@ -1,9 +1,13 @@
 import { useState, useEffect, useRef } from "react";
-import { Check, Plus, Play, Square, Timer } from "lucide-react";
+import { Check, Plus, Play, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { playCompletionSound, playTickSound, vibrate } from "@/lib/timerSounds";
 import type { SessionSet } from "@/types/workout";
+
+/** Used when a timed exercise reaches the tracker without a duration of its own. */
+const FALLBACK_DURATION_SECONDS = 30;
 
 // Interface for SetTracker props
 
@@ -12,9 +16,18 @@ interface SetTrackerProps {
   plannedSets: number;
   plannedReps: string;
   plannedRepsList?: (number | string)[];
+  /**
+   * The hold prescribed by the workout, in seconds. Separate from
+   * `plannedReps` on purpose: a Tai Chi row carries `reps = NULL` and
+   * `duration_seconds = 120`, and reading the target off the reps field is
+   * what used to show "12" under a 120s posture.
+   */
+  plannedDurationSeconds?: number;
   defaultWeight?: number;
   defaultRestSeconds?: number;
   executionType?: 'reps' | 'time';
+  /** Off for exercises where a load makes no sense, such as a timed hold. */
+  showWeight?: boolean;
   onCompleteSet: (setData: {
     setNumber: number;
     actualReps?: number;
@@ -35,9 +48,11 @@ export function SetTracker({
   plannedSets,
   plannedReps,
   plannedRepsList,
+  plannedDurationSeconds,
   defaultWeight = 0,
   defaultRestSeconds = 60,
   executionType = 'reps',
+  showWeight = true,
   onCompleteSet,
   onStartRest,
   suggestedValues,
@@ -55,11 +70,18 @@ export function SetTracker({
     };
   });
 
+  const columns = showWeight
+    ? "grid-cols-[auto_1fr_1fr_auto]"
+    : "grid-cols-[auto_1fr_auto]";
+
   return (
     <div className={cn("space-y-2", className)}>
-      <div className="grid grid-cols-[auto_1fr_1fr_auto] gap-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 text-center">
+      <div className={cn(
+        "grid gap-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 text-center",
+        columns
+      )}>
         <div className="w-8">#</div>
-        <div>Kg</div>
+        {showWeight && <div>Kg</div>}
         <div>{executionType === 'time' ? 'Tempo (s)' : 'Reps'}</div>
         <div className="w-10">Ok</div>
       </div>
@@ -70,8 +92,11 @@ export function SetTracker({
           setNumber={row.setNumber}
           existingSet={row.existingSet}
           plannedReps={plannedRepsList?.[i] ? plannedRepsList[i].toString() : plannedReps}
+          plannedDurationSeconds={plannedDurationSeconds}
           defaultWeight={defaultWeight}
           executionType={executionType}
+          showWeight={showWeight}
+          columns={columns}
           suggestedValues={suggestedValues}
           lastSet={lastSessionSets?.find(s => s.setNumber === row.setNumber)}
           onComplete={(data) => {
@@ -94,8 +119,11 @@ function SetRow({
   setNumber,
   existingSet,
   plannedReps,
+  plannedDurationSeconds,
   defaultWeight,
   executionType,
+  showWeight,
+  columns,
   suggestedValues,
   lastSet,
   onComplete
@@ -103,17 +131,26 @@ function SetRow({
   setNumber: number;
   existingSet?: SessionSet;
   plannedReps: string;
+  plannedDurationSeconds?: number;
   defaultWeight: number;
   executionType: 'reps' | 'time';
+  showWeight: boolean;
+  columns: string;
   suggestedValues?: { weight?: number; reps?: number } | null;
   lastSet?: { actualWeightKg?: number; actualReps?: number };
   onComplete: (data: { actualReps: number; actualWeightKg: number }) => void;
 }) {
-  // Initialize with existing data OR defaults
+  const isTimed = executionType === 'time';
+
+  // A timed set takes its target from the workout's own duration. Parsing it
+  // out of `plannedReps` is what produced a 12 second Tai Chi posture, since
+  // the library default for reps is the string "12".
+  const targetSeconds = plannedDurationSeconds && plannedDurationSeconds > 0
+    ? plannedDurationSeconds
+    : FALLBACK_DURATION_SECONDS;
+
   // Parse planned reps to get a number (e.g. "12-15" -> 12)
-  const targetValue = executionType === 'time'
-    ? parseInt(plannedReps) || 0
-    : parseInt(plannedReps) || 12;
+  const targetValue = isTimed ? targetSeconds : parseInt(plannedReps) || 12;
 
   const [weight, setWeight] = useState<string>(
     existingSet?.actualWeightKg?.toString() || (defaultWeight > 0 ? defaultWeight.toString() : "")
@@ -124,10 +161,11 @@ function SetRow({
 
   const isCompleted = existingSet?.isCompleted;
 
-  // Timer State for 'time' execution
-  const [isTimerRunning, setIsTimerRunning] = useState(false);
-  const [timerSeconds, setTimerSeconds] = useState(0);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  // Countdown state for 'time' execution. It runs *down* from the prescribed
+  // hold rather than up from zero: someone holding a 120s posture should be
+  // told when it is over, not asked to time themselves.
+  const [isRunning, setIsRunning] = useState(false);
+  const [remaining, setRemaining] = useState(targetSeconds);
 
   // React to suggested values
   useEffect(() => {
@@ -137,46 +175,79 @@ function SetRow({
     }
   }, [suggestedValues, isCompleted, executionType]);
 
-  // Autofill from Last Set if empty? Optional. For now just display.
-  // Display last log below inputs
-
+  // Keep the countdown in step with the plan while it is not running
   useEffect(() => {
-    if (isTimerRunning) {
-      timerRef.current = setInterval(() => {
-        setTimerSeconds(prev => prev + 1);
-      }, 1000);
-    } else if (timerRef.current) {
-      clearInterval(timerRef.current);
-    }
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [isTimerRunning]);
+    if (!isRunning) setRemaining(targetSeconds);
+  }, [targetSeconds, isRunning]);
 
-  const toggleTimer = () => {
-    if (isTimerRunning) {
-      // Stop
-      setIsTimerRunning(false);
-      setValue(timerSeconds.toString());
-    } else {
-      // Start
-      setTimerSeconds(0);
-      setIsTimerRunning(true);
+  // Tick
+  useEffect(() => {
+    if (!isRunning) return;
+
+    const interval = setInterval(() => {
+      setRemaining(prev => Math.max(0, prev - 1));
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isRunning]);
+
+  // The finishing move is kept on a ref so the effect below can depend only on
+  // the clock, and not re-fire every time a parent re-renders.
+  const finishRef = useRef<(seconds: number) => void>(() => undefined);
+  finishRef.current = (seconds: number) => {
+    setValue(seconds.toString());
+    onComplete({ actualWeightKg: parseFloat(weight) || 0, actualReps: seconds });
+  };
+
+  // React to the clock outside the state updater, so React stays free to
+  // re-run it without double-firing the sound or logging the set twice.
+  useEffect(() => {
+    if (!isRunning) return;
+
+    if (remaining === 0) {
+      setIsRunning(false);
+      playCompletionSound();
+      vibrate([200, 100, 200]);
+      finishRef.current(targetSeconds);
+      return;
     }
+
+    if (remaining <= 3) playTickSound();
+  }, [isRunning, remaining, targetSeconds]);
+
+  const startTimer = () => {
+    setRemaining(targetSeconds);
+    setIsRunning(true);
+  };
+
+  /** Stops without logging, leaving the elapsed time for the reader to confirm. */
+  const stopTimer = () => {
+    setValue(Math.max(0, targetSeconds - remaining).toString());
+    setIsRunning(false);
+    setRemaining(targetSeconds);
   };
 
   const handleCheck = () => {
-    if (isTimerRunning) toggleTimer(); // Stop timer if running
+    // Tapping the check mid-countdown means "I stopped here" - log what was
+    // actually held rather than the target.
+    const logged = isRunning
+      ? Math.max(0, targetSeconds - remaining)
+      : parseFloat(value) || 0;
 
-    const w = parseFloat(weight) || 0;
-    const v = parseFloat(value) || 0;
-    onComplete({ actualWeightKg: w, actualReps: v });
+    if (isRunning) {
+      setIsRunning(false);
+      setRemaining(targetSeconds);
+      setValue(logged.toString());
+    }
+
+    onComplete({ actualWeightKg: parseFloat(weight) || 0, actualReps: logged });
   };
 
   return (
     <div className="mb-2">
       <div className={cn(
-        "grid grid-cols-[auto_1fr_1fr_auto] gap-3 items-center",
+        "grid gap-3 items-center",
+        columns,
         isCompleted ? "opacity-50" : "opacity-100"
       )}>
         {/* Set Number */}
@@ -185,41 +256,44 @@ function SetRow({
         </div>
 
         {/* Weight Input */}
-        <Input
-          type="number"
-          placeholder="kg"
-          value={weight}
-          onChange={(e) => setWeight(e.target.value)}
-          className="text-center h-10 font-bold bg-muted/30"
-          disabled={!!isCompleted}
-        />
+        {showWeight && (
+          <Input
+            type="number"
+            placeholder="kg"
+            value={weight}
+            onChange={(e) => setWeight(e.target.value)}
+            className="text-center h-10 font-bold bg-muted/30"
+            disabled={!!isCompleted}
+          />
+        )}
 
         {/* Reps/Time Input with Timer Toggle */}
         <div className="relative">
           <Input
             type="number"
-            placeholder={executionType === 'time' ? "seg" : "reps"}
-            value={isTimerRunning ? timerSeconds : value}
-            onChange={(e) => !isTimerRunning && setValue(e.target.value)}
+            placeholder={isTimed ? "seg" : "reps"}
+            value={isRunning ? remaining : value}
+            onChange={(e) => !isRunning && setValue(e.target.value)}
             className={cn(
               "text-center h-10 font-bold bg-muted/30",
-              isTimerRunning && "text-primary border-primary bg-primary/10"
+              isRunning && "text-primary border-primary bg-primary/10",
+              isRunning && remaining <= 3 && "text-red-500 border-red-500 bg-red-500/10 animate-pulse"
             )}
-            disabled={!!isCompleted || isTimerRunning}
+            disabled={!!isCompleted || isRunning}
           />
 
           {/* Play Button for Time execution */}
-          {executionType === 'time' && !isCompleted && (
+          {isTimed && !isCompleted && (
             <Button
               size="icon"
               variant="ghost"
               className={cn(
                 "absolute right-0 top-0 h-10 w-8 text-muted-foreground hover:text-primary",
-                isTimerRunning && "text-red-500 hover:text-red-600 animate-pulse"
+                isRunning && "text-red-500 hover:text-red-600"
               )}
-              onClick={toggleTimer}
+              onClick={isRunning ? stopTimer : startTimer}
             >
-              {isTimerRunning ? <Square className="h-4 w-4 fill-current" /> : <Play className="h-4 w-4 fill-current" />}
+              {isRunning ? <Square className="h-4 w-4 fill-current" /> : <Play className="h-4 w-4 fill-current" />}
             </Button>
           )}
         </div>
@@ -237,7 +311,6 @@ function SetRow({
               handleCheck();
             }
           }}
-          disabled={isTimerRunning}
         >
           <Check className={cn("w-5 h-5", isCompleted ? "text-white" : "text-muted-foreground")} />
         </Button>
@@ -245,9 +318,9 @@ function SetRow({
 
       {/* History Last Log Display */}
       {lastSet && !isCompleted && (
-        <div className="grid grid-cols-[auto_1fr_1fr_auto] gap-3 px-1 mt-1 text-[10px] text-muted-foreground/70">
+        <div className={cn("grid gap-3 px-1 mt-1 text-[10px] text-muted-foreground/70", columns)}>
           <div className="w-8"></div>
-          <div className="text-center">Ant: {lastSet.actualWeightKg}</div>
+          {showWeight && <div className="text-center">Ant: {lastSet.actualWeightKg}</div>}
           <div className="text-center">{lastSet.actualReps}</div>
           <div className="w-10"></div>
         </div>

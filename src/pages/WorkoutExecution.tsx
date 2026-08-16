@@ -356,7 +356,11 @@ export default function WorkoutExecution() {
                   </div>
                   <div className="flex items-center gap-1">
                     <Dumbbell className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
-                    <span>{progress?.setsCompleted || 0}<span className="hidden xs:inline"> {t("workouts.sets").toLowerCase()}</span></span>
+                    <span>
+                      {progress?.setsCompleted || 0}
+                      {progress?.setsTotal ? `/${progress.setsTotal}` : ""}
+                      <span className="hidden xs:inline"> {t("workouts.sets").toLowerCase()}</span>
+                    </span>
                   </div>
                 </div>
               </div>

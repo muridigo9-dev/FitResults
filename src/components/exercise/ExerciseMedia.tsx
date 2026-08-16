@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useMemo, useState } from "react";
+import { ReactNode, Ref, useEffect, useMemo, useState } from "react";
 import { getExerciseMediaCandidates, isVideoUrl, MEDIA_PLACEHOLDER } from "@/lib/exerciseMedia";
 
 interface ExerciseMediaProps {
@@ -18,10 +18,29 @@ interface ExerciseMediaProps {
     /**
      * Gives a video clip its native player chrome, for the places where the
      * point is to *watch* it (the instructions panel) rather than to show a
-     * looping preview. Implies no autoplay and no loop, so the clip does not
-     * restart under the reader.
+     * looping preview. On its own it implies no autoplay and no loop, so the
+     * clip does not restart under the reader.
      */
     controls?: boolean;
+    /**
+     * Playback overrides.
+     *
+     * The `isActive`/`controls` pair covers two of the three combinations we
+     * need: a silent looping preview in the grid, and a clip you press play on
+     * in the instructions panel. The demonstration player wants the third -
+     * autoplay *and* loop *and* a way to reach the clip - which the defaults
+     * cannot express, so each flag can be set outright.
+     */
+    autoPlay?: boolean;
+    loop?: boolean;
+    muted?: boolean;
+    /**
+     * Videos here average 2 MB, so only the clip the student is actually on is
+     * worth fetching in full. Everything else stays on metadata.
+     */
+    preload?: "none" | "metadata" | "auto";
+    /** Handle on the underlying <video>, for mute and fullscreen controls. */
+    mediaRef?: Ref<HTMLVideoElement>;
 }
 
 /**
@@ -35,6 +54,11 @@ export function ExerciseMedia({
     loading = "lazy",
     fallback,
     controls = false,
+    autoPlay,
+    loop,
+    muted,
+    preload = "metadata",
+    mediaRef,
 }: ExerciseMediaProps) {
     const { name, gifUrl, imageUrl, imagePath, videoUrl } = exercise;
 
@@ -60,6 +84,13 @@ export function ExerciseMedia({
     const handleError = () => setIndex(prev => prev + 1);
 
     if (isVideoUrl(src)) {
+        const shouldAutoPlay = autoPlay ?? (isActive && !controls);
+        const shouldLoop = loop ?? !controls;
+        // Browsers only grant autoplay to muted video, so an autoplaying clip
+        // always starts muted whatever the caller asked for. Unmuting later is
+        // a user gesture, which they do allow.
+        const shouldMute = muted ?? (shouldAutoPlay || !controls);
+
         /**
          * A <video> that is not autoplaying paints nothing until a frame has
          * been decoded, and `preload` defaults to metadata only - so every
@@ -75,20 +106,21 @@ export function ExerciseMedia({
         // Applies to the controls case too: without it the panel shows a black
         // rectangle until the reader presses play. 0.1s in is imperceptible as
         // a starting point and the scrubber still reaches the whole clip.
-        const shouldSeek = !isActive && !src.includes("#");
+        const shouldSeek = !shouldAutoPlay && !src.includes("#");
         const videoSrc = shouldSeek ? `${src}#t=0.1` : src;
 
         return (
             <video
                 key={videoSrc}
+                ref={mediaRef}
                 src={videoSrc}
                 className={className}
                 controls={controls}
-                autoPlay={isActive && !controls}
-                loop={!controls}
-                muted={!controls}
+                autoPlay={shouldAutoPlay}
+                loop={shouldLoop}
+                muted={shouldMute}
                 playsInline
-                preload="metadata"
+                preload={preload}
                 onError={handleError}
             />
         );

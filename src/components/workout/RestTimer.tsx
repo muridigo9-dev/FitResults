@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Play, Pause, RotateCcw, Volume2, VolumeX, Plus, Minus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { playCompletionSound, playTickSound } from "@/lib/timerSounds";
 import { useI18n } from "@/hooks/useI18n";
 
 interface RestTimerProps {
@@ -50,49 +51,6 @@ export function RestTimer({
     }
   }, [isPaused]);
 
-  // Play sounds
-  const playCompletionSound = useCallback(() => {
-    try {
-      const audioContext = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-
-      oscillator.frequency.value = 880;
-      oscillator.type = "sine";
-      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + 0.5);
-    } catch {
-      // Ignore audio errors
-    }
-  }, []);
-
-  const playTickSound = useCallback(() => {
-    try {
-      const audioContext = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-
-      oscillator.frequency.value = 440;
-      oscillator.type = "sine";
-      gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
-
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + 0.1);
-    } catch {
-      // Ignore audio errors
-    }
-  }, []);
-
   // Timer logic
   useEffect(() => {
     // If parent driven loop exists (onAdjustTime provided usually implies parent control context), 
@@ -126,7 +84,7 @@ export function RestTimer({
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isRunning, timeRemaining, isMuted, onComplete, initialSeconds, onAdjustTime, playCompletionSound, playTickSound]);
+  }, [isRunning, timeRemaining, isMuted, onComplete, initialSeconds, onAdjustTime]);
 
 
   // Format time

@@ -3,6 +3,16 @@ import { ChevronDown, ChevronUp, Check, SkipForward, Info, Link as LinkIcon, Rot
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { SetTracker } from "./SetTracker";
 import { QuickFeedback, MoodSelector } from "./ExerciseFeedback";
@@ -14,7 +24,8 @@ import { useLastExerciseLog } from "@/hooks/useWorkoutSession";
 import type { SessionExercise, ExerciseFeedbackMood, LikeDislike } from "@/types/workout";
 import { EQUIPMENT_LABELS, DIFFICULTY_LABELS } from "@/types/workout";
 import { ExerciseMedia } from "@/components/exercise/ExerciseMedia";
-import { hasExerciseVideo } from "@/lib/exerciseMedia";
+import { ExerciseDemoPlayer } from "@/components/exercise/ExerciseDemoPlayer";
+import { getExerciseMediaCandidates, hasExerciseVideo } from "@/lib/exerciseMedia";
 import { useI18n } from "@/hooks/useI18n";
 
 interface WorkoutExecutionCardProps {
@@ -60,10 +71,13 @@ export function WorkoutExecutionCard({
   const [likeDislike, setLikeDislike] = useState<LikeDislike | undefined>();
   const [suggestionValues, setSuggestionValues] = useState<{ weight?: number, reps?: number } | null>(null);
   const [isSuggestionDismissed, setIsSuggestionDismissed] = useState(false);
+  const [showPartialDialog, setShowPartialDialog] = useState(false);
 
   const { t } = useI18n();
   const exercise = sessionExercise.exercise;
   const hasVideo = hasExerciseVideo(exercise ?? {});
+  const hasMedia = getExerciseMediaCandidates(exercise ?? {}).length > 0;
+  const isTimed = exercise?.executionType === 'time';
   const { data: history } = useExerciseHistory(exercise?.id);
   const { data: lastLog } = useLastExerciseLog(exercise?.id, sessionExercise.sessionId, isExpanded);
 
@@ -80,7 +94,21 @@ export function WorkoutExecutionCard({
   const isPartiallyCompleted = isCompleted && completedSets > 0 && completedSets < totalSets;
   const isSkipped = isCompleted && completedSets === 0;
 
+  /**
+   * "Concluir" used to be disabled until every set was ticked, which read as a
+   * dead button - the single loudest complaint about this screen. It now always
+   * responds, and asks before recording a partial exercise.
+   */
   const handleComplete = () => {
+    if (completedSets < totalSets) {
+      setShowPartialDialog(true);
+      return;
+    }
+    onComplete({ mood, likeDislike });
+  };
+
+  const confirmPartialComplete = () => {
+    setShowPartialDialog(false);
     onComplete({ mood, likeDislike });
   };
 
@@ -212,7 +240,11 @@ export function WorkoutExecutionCard({
       {/* Expanded Content */}
       {isExpanded && !isCompleted && (
         <CardContent className="pt-0 pb-4 space-y-4">
-          {/* Exercise Image/GIF */}
+          {/* Looping demonstration for the exercise being performed. Always on
+              screen: a movement is copied, not read about, and hiding the clip
+              behind a toggle meant most students never saw it. */}
+          {isActive && hasMedia && <ExerciseDemoPlayer exercise={exercise} isActive />}
+
           {/* Equipment & Difficulty */}
           <div className="flex flex-wrap gap-2">
             {exercise.equipment && exercise.equipment !== 'none' && (
@@ -274,24 +306,28 @@ export function WorkoutExecutionCard({
                     </div>
                   )}
 
-                  {/* Media. ExerciseMedia walks gif -> image -> image_path ->
-                      video_url, which is what actually holds the clips, and
-                      gives a video its controls so it can be watched here
-                      rather than only looping. */}
-                  <div className="relative w-fit max-w-full mx-auto rounded-lg overflow-hidden bg-muted shadow-sm border flex items-center justify-center">
-                    <ExerciseMedia
-                      exercise={exercise}
-                      controls={hasVideo}
-                      loading="eager"
-                      className="max-h-[60vh] w-auto max-w-full object-contain bg-background"
-                      fallback={
-                        <div className="min-w-[220px] min-h-[160px] flex flex-col items-center justify-center gap-2 text-muted-foreground p-6 text-center">
-                          <VideoOff className="h-7 w-7 opacity-40" />
-                          <p className="text-xs">{t("workouts.noVideo")}</p>
-                        </div>
-                      }
-                    />
-                  </div>
+                  {/* Media, for the cards that are not the current exercise -
+                      the active one already loops its clip above, and streaming
+                      the same 2 MB twice helps nobody. ExerciseMedia walks
+                      gif -> image -> image_path -> video_url, which is what
+                      actually holds the clips, and gives a video its controls
+                      so it can be watched here rather than only looping. */}
+                  {!isActive && (
+                    <div className="relative w-fit max-w-full mx-auto rounded-lg overflow-hidden bg-muted shadow-sm border flex items-center justify-center">
+                      <ExerciseMedia
+                        exercise={exercise}
+                        controls={hasVideo}
+                        loading="eager"
+                        className="max-h-[60vh] w-auto max-w-full object-contain bg-background"
+                        fallback={
+                          <div className="min-w-[220px] min-h-[160px] flex flex-col items-center justify-center gap-2 text-muted-foreground p-6 text-center">
+                            <VideoOff className="h-7 w-7 opacity-40" />
+                            <p className="text-xs">{t("workouts.noVideo")}</p>
+                          </div>
+                        }
+                      />
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -321,9 +357,13 @@ export function WorkoutExecutionCard({
             sets={sessionExercise.sets}
             plannedSets={totalSets}
             plannedReps={exercise.defaultReps}
-            plannedRepsList={exercise.repsMode === 'variable' ? exercise.repsList : undefined}
+            plannedRepsList={!isTimed && exercise.repsMode === 'variable' ? exercise.repsList : undefined}
+            plannedDurationSeconds={exercise.durationSeconds}
             defaultRestSeconds={exercise.defaultRestSeconds}
             executionType={exercise.executionType as 'reps' | 'time'}
+            // A timed hold has no load to record, and the empty kg box next to
+            // a Tai Chi posture only made the row look broken.
+            showWeight={!isTimed}
             suggestedValues={suggestionValues}
             lastSessionSets={lastLog?.sets.map(s => ({
               setNumber: s.set_number,
@@ -370,12 +410,31 @@ export function WorkoutExecutionCard({
             <Button
               className="flex-1 text-xs sm:text-sm h-9 sm:h-10"
               onClick={handleComplete}
-              disabled={completedSets < totalSets}
             >
               <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
               Concluir
             </Button>
           </div>
+
+          <AlertDialog open={showPartialDialog} onOpenChange={setShowPartialDialog}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>{t("execution.partialTitle")}</AlertDialogTitle>
+                <AlertDialogDescription>
+                  {t("execution.partialDescription", {
+                    completed: completedSets,
+                    total: totalSets,
+                  })}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>{t("actions.back")}</AlertDialogCancel>
+                <AlertDialogAction onClick={confirmPartialComplete}>
+                  {t("execution.completeAnyway")}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </CardContent>
       )
       }

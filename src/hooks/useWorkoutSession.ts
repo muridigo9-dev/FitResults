@@ -372,6 +372,18 @@ export function useWorkoutSession(sessionId?: string) {
   // Let's make a 3rd chunk for the return object.
 
 
+  /**
+   * How many sets the workout actually asks for.
+   *
+   * `workout_sessions.total_sets` counts the session_sets rows that exist, and
+   * those are only created as sets are logged - so it reads 0 at the start of a
+   * workout and then climbs to match completed_sets, which makes it useless as
+   * a denominator. The plan snapshot on each exercise is the real target.
+   */
+  const plannedSets = session
+    ? session.exercises.reduce((total, e) => total + (e.exercise?.defaultSets ?? 0), 0)
+    : 0;
+
   // Calculate progress
   const progress = session
     ? {
@@ -381,9 +393,9 @@ export function useWorkoutSession(sessionId?: string) {
         ? Math.round((session.completedExercises / session.totalExercises) * 100)
         : 0,
       setsCompleted: session.completedSets,
-      setsTotal: session.totalSets,
-      setsPercent: session.totalSets > 0
-        ? Math.round((session.completedSets / session.totalSets) * 100)
+      setsTotal: plannedSets,
+      setsPercent: plannedSets > 0
+        ? Math.round((session.completedSets / plannedSets) * 100)
         : 0,
       currentExerciseIndex: session.exercises.findIndex(e => !e.isCompleted),
       currentExercise: session.exercises.find(e => !e.isCompleted),

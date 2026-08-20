@@ -12,6 +12,30 @@ interface CreateTestUserRequest {
   subscription_status: 'active' | 'trial' | 'cancelled' | 'none'
 }
 
+/**
+ * Finds an auth user by email, across every page.
+ *
+ * `auth.admin.listUsers()` returns only the first page — 50 users — so the
+ * unpaginated `.some()` this replaces would report "does not exist" for any
+ * account past the 50th, and `createUser` would then fail on the duplicate.
+ */
+async function findUserByEmail(supabase: any, email: string) {
+  const target = email.toLowerCase().trim()
+  const perPage = 1000 // GoTrue's maximum
+
+  for (let page = 1;; page++) {
+    const { data, error } = await supabase.auth.admin.listUsers({ page, perPage })
+    if (error) throw error
+
+    const users = data?.users ?? []
+    const match = users.find((u: any) => u.email?.toLowerCase() === target)
+    if (match) return match
+
+    // A short page is the last page.
+    if (users.length < perPage) return null
+  }
+}
+
 Deno.serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -77,8 +101,7 @@ Deno.serve(async (req) => {
     }
 
     // Check if user already exists
-    const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers()
-    const userExists = existingUsers?.users?.some((user) => user.email === email)
+    const userExists = !!(await findUserByEmail(supabaseAdmin, email))
 
     if (userExists) {
       return new Response(

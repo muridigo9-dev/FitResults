@@ -139,8 +139,6 @@ jobs:
       - name: ⚡ Deploy Edge Functions
         run: |
           echo "Deploying all edge functions..."
-          supabase functions deploy provision-admin --no-verify-jwt
-          supabase functions deploy provision-test-users --no-verify-jwt
           supabase functions deploy get-manifest --no-verify-jwt
           supabase functions deploy send-push-notification --no-verify-jwt
           supabase functions deploy process-cancellation --no-verify-jwt

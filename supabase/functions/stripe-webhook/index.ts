@@ -13,6 +13,31 @@ const json = (body: unknown, status = 200) =>
   });
 
 /**
+ * Finds an auth user by email, across every page.
+ *
+ * `auth.admin.listUsers()` returns only the first page — 50 users — so the
+ * `users.find()` this replaces silently stopped seeing anyone who signed up
+ * after the 50th account. A returning customer then looked new, and got either
+ * a failed re-invite or a second account.
+ */
+async function findUserByEmail(supabaseAdmin: any, email: string) {
+  const target = email.toLowerCase().trim();
+  const perPage = 1000; // GoTrue's maximum
+
+  for (let page = 1;; page++) {
+    const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page, perPage });
+    if (error) throw error;
+
+    const users = data?.users ?? [];
+    const match = users.find((u: any) => u.email?.toLowerCase() === target);
+    if (match) return match;
+
+    // A short page is the last page.
+    if (users.length < perPage) return null;
+  }
+}
+
+/**
  * STRIPE WEBHOOK V10 — SIGNED, AND BLIND TO FUNNEL SALES
  *
  * Two things changed from V9:
@@ -59,11 +84,35 @@ Deno.serve(async (req) => {
       .select("secret_key, webhook_secret")
       .maybeSingle();
 
-    const webhookSecret = stripeSettings?.webhook_secret || Deno.env.get("STRIPE_WEBHOOK_SECRET");
+    // A Stripe signing secret is always `whsec_...`. Anything else in this
+    // column is a paste of the wrong credential, and because `||` only falls
+    // through on an empty value, a wrong-but-present value used to shadow a
+    // correct STRIPE_WEBHOOK_SECRET. Every event then failed verification with
+    // a 400 and left no trace at all, because the audit insert below only runs
+    // on events that already verified. Treat "not a signing secret" as absent.
+    const isSigningSecret = (v?: string | null): v is string => !!v && v.startsWith("whsec_");
+
+    const storedWebhookSecret = stripeSettings?.webhook_secret;
+    const envWebhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
+
+    if (storedWebhookSecret && !isSigningSecret(storedWebhookSecret)) {
+      console.error(
+        "[CONFIG ERROR] stripe_settings.webhook_secret não é um signing secret " +
+          "(precisa começar com 'whsec_'). Ignorando o valor salvo e tentando " +
+          "STRIPE_WEBHOOK_SECRET.",
+      );
+    }
+
+    const webhookSecret = isSigningSecret(storedWebhookSecret)
+      ? storedWebhookSecret
+      : isSigningSecret(envWebhookSecret)
+      ? envWebhookSecret
+      : null;
+
     const secretKey = stripeSettings?.secret_key || Deno.env.get("STRIPE_SECRET_KEY");
 
     if (!webhookSecret || !secretKey) {
-      console.error("[CONFIG ERROR] Stripe não configurado: falta secret_key ou webhook_secret.");
+      console.error("[CONFIG ERROR] Stripe não configurado: falta secret_key ou um signing secret válido.");
       // 500, not 200: Stripe should retry once configuration is fixed rather
       // than treat a lost event as delivered.
       return json({ error: "Stripe configuration not found" }, 500);
@@ -103,7 +152,7 @@ Deno.serve(async (req) => {
     console.log(`[STRIPE WEBHOOK] Evento: ${eventType}`);
 
     // Log event to DB
-    const { data: eventLog, error: logError } = await supabaseAdmin
+    const { data: insertedLog, error: logError } = await supabaseAdmin
       .from("stripe_events")
       .insert({
         stripe_event_id: stripeEventId,
@@ -114,7 +163,31 @@ Deno.serve(async (req) => {
       .select()
       .maybeSingle();
 
-    if (logError) console.error("[LOG ERROR]", logError);
+    let eventLog = insertedLog;
+
+    if (logError) {
+      // 23505 = unique violation on stripe_event_id, i.e. Stripe redelivered an
+      // event we have already seen. Skip only if the first delivery actually
+      // finished — if it failed partway and returned non-2xx, this redelivery
+      // is the retry that should complete it, so fall through and reuse the row.
+      if (logError.code === "23505") {
+        const { data: prior } = await supabaseAdmin
+          .from("stripe_events")
+          .select("id, processed")
+          .eq("stripe_event_id", stripeEventId)
+          .maybeSingle();
+
+        if (prior?.processed) {
+          console.log(`[SKIP] Evento ${stripeEventId} já processado — redelivery ignorada.`);
+          return json({ received: true, skipped: "duplicate" });
+        }
+
+        console.log(`[RETRY] Evento ${stripeEventId} já registrado mas não concluído — reprocessando.`);
+        eventLog = prior ?? null;
+      } else {
+        console.error("[LOG ERROR]", logError);
+      }
+    }
 
     // === QUIZ-ORIGIN GUARD ===
     // Checked after logging so the sale is auditable here, and before any
@@ -163,17 +236,49 @@ Deno.serve(async (req) => {
     }
 
     // 2. Processar de acordo com o tipo de evento
+
+    // Stripe subscription status -> our two columns, resolved in one place
+    // because `customer.subscription.updated` and the `invoice.*` events below
+    // describe the same failure from two directions and must not disagree.
+    //
+    // `past_due` deliberately keeps access ON. Stripe retries a failed card for
+    // about two weeks, and cutting a customer off on the first failed charge
+    // punishes someone whose card merely expired. The real cutoff is
+    // `customer.subscription.deleted`, which is what Stripe sends once it has
+    // given up — that branch already revokes access.
+    const GRACE_STATUSES = new Set(["active", "trialing", "past_due"]);
+    const accountStatusFor = (subscriptionStatus: string) =>
+      GRACE_STATUSES.has(subscriptionStatus) ? "active" : "inactive";
+
+    // Every failure in this delivery. A non-empty list means we answer Stripe
+    // with a 500 so it redelivers. These used to be logged while the handler
+    // still returned 200, so Stripe considered the event delivered and a paid
+    // customer who failed to provision was never retried and never alerted.
+    const failures: string[] = [];
+
+    const noteFailure = async (label: string, message: string) => {
+      console.error(`[${label}] ${message}`);
+      failures.push(`${label}: ${message}`);
+      if (eventLog) {
+        await supabaseAdmin
+          .from("stripe_events")
+          .update({ error_message: `${label}: ${message}` })
+          .eq("id", eventLog.id);
+      }
+    };
+
     if (eventType === "checkout.session.completed" || eventType === "customer.subscription.created" || eventType === "customer.subscription.updated") {
 
-      const status = session.status === "active" || session.status === "trialing" || eventType === "checkout.session.completed" ? "active" : session.status;
+      // A completed Checkout is a paid subscription; for the subscription
+      // events Stripe's own status is authoritative.
+      const subscriptionStatus = eventType === "checkout.session.completed"
+        ? "active"
+        : (session.status ?? "active");
 
-      console.log(`[ACTION] Processando ${eventType} para: ${email} (Status: ${status})`);
+      console.log(`[ACTION] Processando ${eventType} para: ${email} (Status: ${subscriptionStatus})`);
 
       // PASSO A: Garantir que o usuário EXISTE no Auth do Supabase
-      // Buscamos o usuário pelo email
-      const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers();
-      if (listError) console.error("[LIST USERS ERROR]", listError);
-      let user = users?.find((u) => u.email?.toLowerCase() === email);
+      let user = await findUserByEmail(supabaseAdmin, email);
 
       if (!user && eventType === "checkout.session.completed") {
         console.log(`[PROVISIONING] Criando nova conta para o lead: ${email}`);
@@ -185,8 +290,8 @@ Deno.serve(async (req) => {
         });
 
         if (inviteError) {
-          console.error(`[INVITE ERROR] ${inviteError.message}`);
-          if (eventLog) await supabaseAdmin.from("stripe_events").update({ error_message: `Invite Error: ${inviteError.message}` }).eq("id", eventLog.id);
+          // The customer has paid and has no way in. Worth a redelivery.
+          await noteFailure("INVITE ERROR", inviteError.message);
         } else {
           user = newUser.user;
           console.log(`[PROVISIONING SUCCESS] Convite enviado para ${email}`);
@@ -202,14 +307,13 @@ Deno.serve(async (req) => {
       });
 
       if (rpcError) {
-        console.error("[RPC ERROR]", rpcError);
-        if (eventLog) await supabaseAdmin.from("stripe_events").update({ error_message: `RPC Error: ${rpcError.message}` }).eq("id", eventLog.id);
+        await noteFailure("RPC ERROR", rpcError.message);
       }
 
       // PASSO C: Sincronização forçada de colunas críticas
       const updateData: any = {
-        subscription_status: status === "active" ? "active" : status,
-        account_status: status === "active" ? "active" : "inactive",
+        subscription_status: subscriptionStatus,
+        account_status: accountStatusFor(subscriptionStatus),
         stripe_customer_id: customerId,
         stripe_subscription_id: subscriptionId,
         full_name: fullName || undefined, // Só atualiza se tiver vindo no stripe
@@ -224,14 +328,39 @@ Deno.serve(async (req) => {
         .ilike("email", email);
 
       if (finalUpdateError) {
-        console.error(`[SYNC ERROR] ${finalUpdateError.message}`);
-        if (eventLog) await supabaseAdmin.from("stripe_events").update({ error_message: `Sync Error: ${finalUpdateError.message}` }).eq("id", eventLog.id);
+        await noteFailure("SYNC ERROR", finalUpdateError.message);
       }
 
-      console.log(`[SUCCESS] Fluxo completo para: ${email}`);
+      if (failures.length === 0) {
+        console.log(`[SUCCESS] Fluxo completo para: ${email}`);
+        if (eventLog) {
+          await supabaseAdmin.from("stripe_events").update({ processed: true }).eq("id", eventLog.id);
+        }
+      }
+    }
 
-      // Mark as processed successfully
-      if (eventLog && !finalUpdateError && !rpcError) {
+    // === DUNNING ===
+    // Neither of these was handled before, so a failed renewal changed nothing:
+    // the account stayed fully active forever and nobody was told. After the
+    // initial sale this is the most consequential event a subscription business
+    // receives — expired cards are most of the churn you can actually recover.
+    if (eventType === "invoice.payment_failed" || eventType === "invoice.payment_succeeded") {
+      const subscriptionStatus = eventType === "invoice.payment_succeeded" ? "active" : "past_due";
+
+      console.log(`[DUNNING] ${eventType} para: ${email} -> ${subscriptionStatus}`);
+
+      const { error: dunningError } = await supabaseAdmin
+        .from("profiles")
+        .update({
+          subscription_status: subscriptionStatus,
+          account_status: accountStatusFor(subscriptionStatus),
+          updated_at: new Date().toISOString(),
+        })
+        .ilike("email", email);
+
+      if (dunningError) {
+        await noteFailure("DUNNING ERROR", dunningError.message);
+      } else if (eventLog) {
         await supabaseAdmin.from("stripe_events").update({ processed: true }).eq("id", eventLog.id);
       }
     }
@@ -249,10 +378,16 @@ Deno.serve(async (req) => {
         .eq("stripe_customer_id", customerId);
 
       if (cancelError) {
-        if (eventLog) await supabaseAdmin.from("stripe_events").update({ error_message: `Termination Error: ${cancelError.message}` }).eq("id", eventLog.id);
+        await noteFailure("TERMINATION ERROR", cancelError.message);
       } else {
         if (eventLog) await supabaseAdmin.from("stripe_events").update({ processed: true }).eq("id", eventLog.id);
       }
+    }
+
+    if (failures.length > 0) {
+      // Non-2xx so Stripe redelivers. The row stays `processed = false`, so the
+      // duplicate check above lets the retry through instead of skipping it.
+      return json({ error: "Processing failed", details: failures }, 500);
     }
 
     return json({ received: true });

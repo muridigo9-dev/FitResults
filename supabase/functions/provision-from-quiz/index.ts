@@ -326,15 +326,37 @@ async function resolveAcademy(supabase: any, order: FulfillmentOrder): Promise<s
   return created?.id ?? null;
 }
 
+/**
+ * Finds an auth user by email, across every page.
+ *
+ * `auth.admin.listUsers()` returns only the first page — 50 users — so the
+ * `.find()` this replaces stopped seeing anyone who signed up after the 50th
+ * account. A renewing buyer past that point looked new, and `createUser` below
+ * would then throw on the duplicate email, failing the whole fulfillment.
+ */
+async function findUserByEmail(supabase: any, email: string) {
+  const target = email.toLowerCase().trim();
+  const perPage = 1000; // GoTrue's maximum
+
+  for (let page = 1;; page++) {
+    const { data, error } = await supabase.auth.admin.listUsers({ page, perPage });
+    if (error) throw error;
+
+    const users = data?.users ?? [];
+    const match = users.find((u: any) => u.email?.toLowerCase() === target);
+    if (match) return match;
+
+    // A short page is the last page.
+    if (users.length < perPage) return null;
+  }
+}
+
 async function resolveUser(
   supabase: any,
   order: FulfillmentOrder,
   email: string
 ): Promise<{ userId: string; isNew: boolean; tempPassword: string | null }> {
-  const { data: list, error: listError } = await supabase.auth.admin.listUsers();
-  if (listError) throw listError;
-
-  const existing = list?.users?.find((u: any) => u.email?.toLowerCase() === email);
+  const existing = await findUserByEmail(supabase, email);
   if (existing) {
     // Never reset the password of an account that already exists. A buyer who
     // renews would otherwise be locked out of the password they had chosen, and

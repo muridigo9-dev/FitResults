@@ -1,0 +1,80 @@
+name: 🗑️ Delete Edge Function
+
+# `supabase functions deploy` only ever adds and updates. A function that is
+# deleted from supabase/functions/ stays live and callable in the project until
+# it is explicitly deleted, so removing the source is only half of a retirement.
+# This workflow is the other half.
+#
+# Deleting a function is immediate and cannot be undone from here — the only way
+# back is to restore the source and deploy it again.
+
+on:
+  workflow_dispatch:
+    inputs:
+      function_names:
+        description: "Function slug(s) to delete, space-separated"
+        required: true
+      confirm:
+        description: "Type 'DELETE' to confirm"
+        required: true
+        default: "NO"
+
+jobs:
+  delete-function:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      # Inputs reach the shell as env vars, never as `${{ }}` spliced into a
+      # script, so a name containing shell metacharacters is data and not code.
+      FUNCTION_NAMES: ${{ github.event.inputs.function_names }}
+      CONFIRM: ${{ github.event.inputs.confirm }}
+
+    steps:
+      - name: 🛑 Safety check
+        run: |
+          if [ "$CONFIRM" != "DELETE" ]; then
+            echo "❌ You must type DELETE to proceed"
+            exit 1
+          fi
+          if [ -z "${FUNCTION_NAMES// /}" ]; then
+            echo "❌ No function name given"
+            exit 1
+          fi
+
+      - name: 🔧 Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: 🔐 Login Supabase
+        run: supabase login --token "$SUPABASE_ACCESS_TOKEN"
+
+      - name: 🗑️ Delete
+        run: |
+          set -euo pipefail
+          for fn in $FUNCTION_NAMES; do
+            echo "⏳ Deleting $fn..."
+            supabase functions delete "$fn" \
+              --project-ref "$SUPABASE_PROJECT_ID" || {
+                echo "⚠️  Could not delete $fn — it may already be gone."
+              }
+          done
+
+      - name: 🔍 Confirm they are gone
+        run: |
+          set -euo pipefail
+          remaining=$(supabase functions list --project-ref "$SUPABASE_PROJECT_ID")
+          echo "$remaining"
+          failed=0
+          for fn in $FUNCTION_NAMES; do
+            # Match the slug as a whole column entry, so deleting `send-email`
+            # is not reported as still-present by `send-email-digest`.
+            if echo "$remaining" | grep -qE "(^|[[:space:]|])${fn}([[:space:]|]|$)"; then
+              echo "❌ $fn is still deployed"
+              failed=1
+            else
+              echo "✅ $fn is gone"
+            fi
+          done
+          exit $failed

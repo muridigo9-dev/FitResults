@@ -2,9 +2,6 @@
 # Or use GitHub Secrets for CI/CD workflows
 project_id = "your-project-id"
 
-[functions.provision-admin]
-verify_jwt = false
-
 [functions.get-manifest]
 verify_jwt = false
 
@@ -55,5 +52,16 @@ verify_jwt = false
 [functions.admin-force-password-change]
 verify_jwt = false
 
-[functions.provision-test-users]
-verify_jwt = false
+# provision-admin and provision-test-users used to be declared here with
+# verify_jwt = false and no auth check of their own. Both created accounts
+# holding the `admin` role, with passwords hardcoded in this repository, for
+# anyone who sent an unauthenticated POST. Their source is deleted; seed
+# accounts belong in the migrations that the setup workflows already run
+# (20260101000023_provision_default_admin.sql and
+# 20260101000041_provision_test_users.sql).
+#
+# Deleting the source does not retire the deployed function: `supabase
+# functions deploy` only ever adds and updates, so a function stays live and
+# callable until it is explicitly deleted. Both were removed from the project
+# with the delete-edge-function workflow. Anything dropped from this directory
+# in future needs that same second step.

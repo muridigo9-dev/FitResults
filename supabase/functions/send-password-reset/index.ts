@@ -24,6 +24,31 @@ interface PasswordResetResponse {
 const RATE_LIMIT_SECONDS = 60;
 
 /**
+ * Finds an auth user by email, across every page.
+ *
+ * `auth.admin.listUsers()` returns only the first page — 50 users. Because a
+ * miss here is deliberately indistinguishable from a hit (to prevent email
+ * enumeration), the unpaginated `.find()` this replaces meant every customer
+ * past the 50th was told "reset link sent" and never received one.
+ */
+async function findUserByEmail(supabase: any, email: string) {
+  const target = email.toLowerCase().trim();
+  const perPage = 1000; // GoTrue's maximum
+
+  for (let page = 1;; page++) {
+    const { data, error } = await supabase.auth.admin.listUsers({ page, perPage });
+    if (error) throw error;
+
+    const users = data?.users ?? [];
+    const match = users.find((u: any) => u.email?.toLowerCase() === target);
+    if (match) return match;
+
+    // A short page is the last page.
+    if (users.length < perPage) return null;
+  }
+}
+
+/**
  * Edge function para enviar email de reset de senha com template whitelabel
  * 
  * Fluxo:
@@ -68,8 +93,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log(`[PasswordReset] Request for: ${email}, admin: ${is_admin_request}, time: ${new Date().toISOString()}`);
 
     // 1. Check if user exists (don't reveal this to client for security)
-    const { data: userData } = await supabase.auth.admin.listUsers();
-    const targetUser = userData?.users?.find(u => u.email?.toLowerCase() === email.toLowerCase());
+    const targetUser = await findUserByEmail(supabase, email);
 
     if (!targetUser) {
       // Return success anyway to prevent email enumeration

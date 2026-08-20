@@ -79,18 +79,21 @@ npx supabase db push
 
 ### 3. Criar Admin Inicial
 
-Execute a edge function `provision-admin`:
+Rode o workflow **Deploy Database (Supabase) + Bootstrap Test Users**
+(`db-main.yml`) pelo GitHub Actions. Ele cria as contas iniciais pela Auth Admin
+API usando o `SUPABASE_SERVICE_ROLE_KEY` guardado nos secrets do repositório, e
+a migration `20260101000023_provision_default_admin.sql` concede o papel
+`admin` a `admin@admin.com`.
 
-```bash
-curl -X POST "https://your-project.supabase.co/functions/v1/provision-admin" \
-  -H "Authorization: Bearer YOUR_ANON_KEY"
-```
+A senha inicial vem do workflow e todas as contas nascem com
+`must_change_password: true`.
 
-**Credenciais padrão:**
-- Email: `admin@admin.com`
-- Senha: `!admin123`
+⚠️ **Altere a senha imediatamente após o primeiro login.**
 
-⚠️ **Altere a senha imediatamente após o primeiro login!**
+> Isto já foi feito por uma edge function `provision-admin` sem nenhuma
+> verificação de autenticação: qualquer POST anônimo criava um `admin@admin.com`
+> com senha fixa no repositório. A função foi removida. Bootstrap de contas
+> privilegiadas roda no CI, com a service role key, nunca num endpoint público.
 
 ### 4. Configurar Stripe
 
@@ -352,7 +355,6 @@ supabase/
 ├── functions/          # Edge functions
 │   ├── create-checkout-session/
 │   ├── stripe-webhook/
-│   ├── provision-admin/
 │   └── send-email/
 ├── schema/             # SQL schemas (referência)
 └── migrations/         # Migrations ordenadas
@@ -371,7 +373,8 @@ supabase/
 ### Admin não consegue acessar
 
 1. Verifique se existe registro em `user_roles` com `role = 'admin'`
-2. Execute novamente `provision-admin`
+2. Rode novamente o workflow `db-main.yml`, que reaplica as migrations de
+   bootstrap e reconcilia perfil e papel da conta
 3. Confirme que o email é exatamente `admin@admin.com`
 
 ### Emails não chegam
